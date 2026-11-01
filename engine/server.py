@@ -1,7 +1,7 @@
 """
 server.py - Zero-dependency Python HTTP Server & REST API for the Game Interface.
 Serves web game client on localhost and handles participant registration,
-real-time score reporting, and live Git repository grading via standard library.
+real-time score & timer reporting, and live Git repository grading via standard library.
 """
 
 import os
@@ -10,7 +10,10 @@ import json
 import http.server
 import socketserver
 import urllib.parse
-from engine.state import PlayerState, get_leaderboard, STAGE_PASSWORDS
+from engine.state import (
+    PlayerState, get_leaderboard, STAGE_PASSWORDS,
+    format_seconds, get_first_finishers
+)
 from engine.bingo import load_bingo_items
 from engine.detective import load_detective_cases
 from engine.showdown import load_showdown_questions
@@ -25,7 +28,6 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
 
     def log_message(self, format, *args):
-        # Silence routine static request logging to keep terminal clean
         pass
 
     def send_json(self, data, status=200):
@@ -54,21 +56,33 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 "name": st.name,
                 "class_name": st.class_name,
                 "score": st.score,
+                "total_time": st.total_time,
+                "formatted_time": format_seconds(st.total_time),
+                "stage_scores": st.stage_scores,
+                "stage_times": st.stage_times,
                 "unlocked_stages": st.unlocked_stages
             })
             return
             
         elif path == "/api/status":
             st = self.player_state or PlayerState()
-            # If organizer is running, it may auto-sync
             self.send_json({
                 "unlocked": st.unlocked_stages,
-                "score": st.score
+                "score": st.score,
+                "total_time": st.total_time,
+                "formatted_time": format_seconds(st.total_time),
+                "first_finishers": get_first_finishers()
             })
             return
 
         elif path == "/api/leaderboard":
-            entries = get_leaderboard(limit=20)
+            raw_entries = get_leaderboard(limit=25)
+            # Add formatted_time to each entry
+            entries = []
+            for e in raw_entries:
+                item = dict(e)
+                item["formatted_time"] = format_seconds(e.get("total_time", 0.0))
+                entries.append(item)
             self.send_json(entries)
             return
 
@@ -111,6 +125,8 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 "name": st.name,
                 "class_name": st.class_name,
                 "score": st.score,
+                "total_time": st.total_time,
+                "formatted_time": format_seconds(st.total_time),
                 "unlocked_stages": st.unlocked_stages
             })
             return
@@ -118,8 +134,20 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/score":
             stage_num = int(body.get("stage", 1))
             points = int(body.get("points", 0))
-            new_score = st.add_points(stage_num, points)
-            self.send_json({"success": True, "score": new_score})
+            time_taken = float(body.get("time_taken", 0.0))
+            is_completion = bool(body.get("is_completion", False))
+            
+            new_score, is_first, bonus_pts = st.add_game_result(
+                stage_num, points, time_taken, is_completion
+            )
+            self.send_json({
+                "success": True,
+                "score": new_score,
+                "total_time": st.total_time,
+                "formatted_time": format_seconds(st.total_time),
+                "is_first": is_first,
+                "bonus_pts": bonus_pts
+            })
             return
 
         elif path == "/api/unlock":
@@ -130,16 +158,28 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/quest/verify":
-            # Run local git check
             repo_path = body.get("repo_path", "").strip() or os.getcwd()
+            time_taken = float(body.get("time_taken", 0.0))
             validator = GitQuestValidator(repo_path=os.path.abspath(os.path.expanduser(repo_path)), student_name=st.name)
             task_flags = validator.evaluate()
             token = generate_verification_token(st.name, validator.total_score, task_flags)
+            
+            # If 100 points, mark completion
+            is_complete = (validator.total_score == 100)
+            new_score, is_first, bonus_pts = st.add_game_result(
+                4, validator.total_score, time_taken, is_complete
+            )
+            
             self.send_json({
                 "success": True,
                 "total_score": validator.total_score,
+                "score": new_score,
                 "token": token,
-                "results": validator.results
+                "results": validator.results,
+                "total_time": st.total_time,
+                "formatted_time": format_seconds(st.total_time),
+                "is_first": is_first,
+                "bonus_pts": bonus_pts
             })
             return
 
@@ -148,10 +188,7 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def start_game_server(player_state, port=5000):
-    """Start local zero-dependency game server."""
     WorkshopHTTPHandler.player_state = player_state
-    
-    # Try preferred port, find next available if busy
     server = None
     actual_port = port
     for p in range(port, port + 20):

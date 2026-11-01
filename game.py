@@ -2,6 +2,7 @@
 """
 game.py - Participant Game Interface for Git Workshop Day 2.
 Includes full Welcome Screen (Name & Class input), Live Leaderboard updating,
+Stop-on-Bingo with randomized cards, Time Tracking, First-Finisher Bonuses (+100 pts),
 Locked Stage 2 (until organizer opens it), and dual Web / Terminal UI.
 Zero external packages or dependencies.
 """
@@ -19,7 +20,9 @@ from engine.ui import (
     Colors, clear_screen, pause, print_banner,
     print_box, ask_choice, ask_text, status_badge, get_terminal_width
 )
-from engine.state import PlayerState, get_leaderboard, STAGE_NAMES, STAGE_PASSWORDS
+from engine.state import (
+    PlayerState, get_leaderboard, STAGE_NAMES, STAGE_PASSWORDS, format_seconds
+)
 from engine.server import start_game_server
 from engine.bingo import run_bingo
 from engine.detective import run_detective
@@ -36,7 +39,7 @@ def terminal_welcome_registration(state):
     print_banner("WELCOME TO THE GIT WORKSHOP ARENA", "Day 2 Interactive Games & Challenges", badge="REGISTRATION", color=Colors.BRIGHT_CYAN)
     
     welcome_text = (
-        "Welcome! To join the live leaderboard and track your points,\n"
+        "Welcome! To join the live leaderboard and track your points & time,\n"
         "please enter your full name and class/batch below."
     )
     print_box(welcome_text, title="PLAYER REGISTRATION", color=Colors.YELLOW)
@@ -59,24 +62,26 @@ def terminal_welcome_registration(state):
 
 
 def print_player_hud(state):
-    """Render top player HUD bar in terminal."""
+    """Render top player HUD bar in terminal with points and total time."""
     width = get_terminal_width()
-    hud = f" 👤 {state.name} | 🏫 {state.class_name} | 🏆 {state.score} PTS | 🎮 UNLOCKED: {len(state.unlocked_stages)}/5 STAGES "
+    time_str = format_seconds(state.total_time)
+    hud = f" 👤 {state.name} | 🏫 {state.class_name} | 🏆 {state.score} PTS | ⏱️ TIME: {time_str} | 🎮 UNLOCKED: {len(state.unlocked_stages)}/5 "
     print(f"{Colors.BG_BLUE}{Colors.BRIGHT_WHITE}{hud.center(width)}{Colors.RESET}\n")
 
 
 def view_terminal_leaderboard(state):
-    """Render live leaderboard view in terminal."""
+    """Render live leaderboard view in terminal with scores and times."""
     clear_screen()
-    print_banner("GIT WORKSHOP: LIVE LEADERBOARD", "Real-time scores & rankings", badge="LEADERBOARD", color=Colors.BRIGHT_MAGENTA)
+    print_banner("GIT WORKSHOP: LIVE LEADERBOARD", "Ranked by Score • Tie-broken by Lowest Time", badge="LEADERBOARD", color=Colors.BRIGHT_MAGENTA)
     
     entries = get_leaderboard(limit=15)
-    print(f"{'RANK':<6} {'NAME':<24} {'CLASS/BATCH':<18} {'SCORE':<10}")
-    print(f"{'─' * 60}")
+    print(f"{'RANK':<6} {'NAME':<24} {'CLASS/BATCH':<16} {'SCORE':<10} {'TIME':<8}")
+    print(f"{'─' * 68}")
     
     user_rank = "-"
     for idx, e in enumerate(entries, 1):
         is_user = (e.get("name") == state.name and e.get("class_name") == state.class_name)
+        time_str = format_seconds(e.get("total_time", 0.0))
         if is_user:
             user_rank = idx
             prefix = f"{Colors.BRIGHT_CYAN}{Colors.BOLD}"
@@ -87,10 +92,10 @@ def view_terminal_leaderboard(state):
             badge_rank = f"  #{idx}"
             suffix = ""
             
-        print(f"{prefix}{badge_rank:<6} {e.get('name', '')[:22]:<24} {e.get('class_name', '')[:16]:<18} {e.get('score', 0)} pts{suffix}")
+        print(f"{prefix}{badge_rank:<6} {e.get('name', '')[:22]:<24} {e.get('class_name', '')[:14]:<16} {e.get('score', 0):<10} {time_str:<8}{suffix}")
         
-    print(f"{'─' * 60}\n")
-    print(f"Your Current Standing: {Colors.BOLD}#{user_rank}{Colors.RESET} ({state.score} points)\n")
+    print(f"{'─' * 68}\n")
+    print(f"Your Standing: {Colors.BOLD}#{user_rank}{Colors.RESET} ({state.score} pts, Total Time: {format_seconds(state.total_time)})\n")
     pause()
 
 
@@ -131,7 +136,6 @@ def run_terminal_game(state):
         print_banner("GIT WORKSHOP ARENA: DAY 2", "Hands-on Laptop Games & Challenges", badge="GAME ARENA", color=Colors.CYAN)
         print_player_hud(state)
         
-        # Build Stage Menu with Locked/Unlocked indicators
         options = []
         for s in range(1, 6):
             s_name = STAGE_NAMES[s]
@@ -149,10 +153,13 @@ def run_terminal_game(state):
             print(f"\n{Colors.CYAN}Thanks for playing, {state.name}! See you on GitHub! 🚀{Colors.RESET}\n")
             break
         elif choice == 0:
-            # Stage 1: Git Bingo
-            pts = run_bingo()
-            if pts:
-                state.add_points(1, pts)
+            # Stage 1: Git Bingo (Stops immediately on Bingo!)
+            pts, elapsed, won = run_bingo()
+            if pts or elapsed:
+                new_score, is_first, bonus = state.add_game_result(1, pts, elapsed, is_completion=won)
+                if is_first and bonus > 0:
+                    print(f"\n{Colors.BRIGHT_MAGENTA}{Colors.BOLD}⚡⚡⚡ FIRST FINISHER SPEED BONUS! +{bonus} POINTS! ⚡⚡⚡{Colors.RESET}")
+                    pause()
         elif choice == 1:
             # Stage 2: Git Detective
             if not state.is_stage_unlocked(2):
@@ -161,35 +168,46 @@ def run_terminal_game(state):
                 print(f"You can also use option [7] to enter the unlock key.\n")
                 pause()
             else:
-                pts = run_detective()
-                if pts:
-                    state.add_points(2, pts)
+                pts, elapsed, won = run_detective()
+                new_score, is_first, bonus = state.add_game_result(2, pts, elapsed, is_completion=won)
+                if is_first and bonus > 0:
+                    print(f"\n{Colors.BRIGHT_MAGENTA}{Colors.BOLD}⚡⚡⚡ FIRST FINISHER SPEED BONUS! +{bonus} POINTS! ⚡⚡⚡{Colors.RESET}")
+                    pause()
         elif choice == 2:
             # Stage 3: Branching Demo
             if not state.is_stage_unlocked(3):
                 print(f"\n{Colors.BRIGHT_RED}🔒 Stage 3 (Branching) is locked! Waiting for facilitator demo.{Colors.RESET}\n")
                 pause()
             else:
+                start_t = time.time()
                 run_branching_guide()
-                state.add_points(3, 20)
+                elapsed = round(time.time() - start_t, 1)
+                new_score, is_first, bonus = state.add_game_result(3, 20, elapsed, is_completion=True)
+                if is_first and bonus > 0:
+                    print(f"\n{Colors.BRIGHT_MAGENTA}{Colors.BOLD}⚡⚡⚡ FIRST FINISHER SPEED BONUS! +{bonus} POINTS! ⚡⚡⚡{Colors.RESET}")
+                    pause()
         elif choice == 3:
             # Stage 4: Git Quest
             if not state.is_stage_unlocked(4):
                 print(f"\n{Colors.BRIGHT_RED}🔒 Stage 4 (Git Quest) is locked! Waiting for organizer to start.{Colors.RESET}\n")
                 pause()
             else:
-                pts = run_quest()
-                if pts:
-                    state.add_points(4, pts)
+                pts, elapsed, won = run_quest()
+                new_score, is_first, bonus = state.add_game_result(4, pts, elapsed, is_completion=won)
+                if is_first and bonus > 0:
+                    print(f"\n{Colors.BRIGHT_MAGENTA}{Colors.BOLD}⚡⚡⚡ FIRST FINISHER SPEED BONUS! +{bonus} POINTS! ⚡⚡⚡{Colors.RESET}")
+                    pause()
         elif choice == 4:
             # Stage 5: Final Showdown
             if not state.is_stage_unlocked(5):
                 print(f"\n{Colors.BRIGHT_RED}🔒 Stage 5 (Final Showdown) is locked! Waiting for the grand finale.{Colors.RESET}\n")
                 pause()
             else:
-                pts = run_showdown()
-                if pts:
-                    state.add_points(5, pts)
+                pts, elapsed, won = run_showdown()
+                new_score, is_first, bonus = state.add_game_result(5, pts, elapsed, is_completion=won)
+                if is_first and bonus > 0:
+                    print(f"\n{Colors.BRIGHT_MAGENTA}{Colors.BOLD}⚡⚡⚡ FIRST FINISHER SPEED BONUS! +{bonus} POINTS! ⚡⚡⚡{Colors.RESET}")
+                    pause()
         elif choice == 5:
             view_terminal_leaderboard(state)
         elif choice == 6:
@@ -213,7 +231,9 @@ def launch_web_ui(state):
         f"Opening in your web browser automatically...\n"
         f"(If your browser does not open automatically, copy and paste the URL above into Chrome, Edge, or Firefox).\n\n"
         f"• Welcome Screen will ask for your Name and Class.\n"
-        f"• Live Leaderboard updates every time you score points.\n"
+        f"• Live Timer records how fast you complete each challenge.\n"
+        f"• Git Bingo stops immediately when you get 3 in a line!\n"
+        f"• ⚡ First Finisher in every game receives a +100 Point Bonus!\n"
         f"• Stage 2 will unlock as soon as the organizer opens the round!\n\n"
         f"{Colors.DIM}Press Ctrl+C in this terminal when you want to stop the game.{Colors.RESET}"
     )
@@ -234,13 +254,9 @@ def launch_web_ui(state):
 
 def main():
     state = PlayerState()
-    
-    # Check CLI flags
     if "--cli" in sys.argv or "-c" in sys.argv:
         run_terminal_game(state)
         return
-        
-    # By default, launch the interactive visual game interface!
     launch_web_ui(state)
 
 

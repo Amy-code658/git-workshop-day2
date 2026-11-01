@@ -1,20 +1,21 @@
 """
 quest.py - Activity D: Git Quest (Individual 100-Point Challenge)
 Automated non-destructive validator that inspects a student's real local Git repository
-against the official Day 2 Checklist, computes their score, and issues a verification code.
+against the official Day 2 Checklist, tracks completion time, and issues a verification code.
 """
 
 import os
 import sys
+import time
 import subprocess
 import hashlib
 from engine.ui import (
     Colors, clear_screen, pause, print_banner,
     print_box, ask_text, ask_choice, status_badge
 )
+from engine.state import format_seconds
 
 def run_git_cmd(repo_dir, args):
-    """Run a non-destructive git command in target repo directory."""
     try:
         proc = subprocess.run(
             ["git"] + args,
@@ -30,7 +31,6 @@ def run_git_cmd(repo_dir, args):
 
 
 def generate_verification_token(name, score, task_flags):
-    """Generate a tamper-evident verification token for facilitators."""
     flag_str = "".join("1" if f else "0" for f in task_flags)
     raw = f"{name.strip().lower()}:{score}:{flag_str}:gitworkshop2026"
     checksum = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:4].upper()
@@ -39,7 +39,6 @@ def generate_verification_token(name, score, task_flags):
 
 
 def verify_token(token):
-    """Decode and verify a token."""
     parts = token.strip().upper().split("-")
     if len(parts) != 4 or parts[0] != "GQ":
         return False, "Invalid token format. Must look like 'GQ-100-NAME-XXXX'."
@@ -49,8 +48,6 @@ def verify_token(token):
         name = parts[2]
         provided_checksum = parts[3]
         
-        # Test against plausible flag combinations matching the score
-        # Full score check
         for flag_str in ("1111111", "1111110", "1111100", "1111000", "1110000"):
             raw = f"{name.lower()}:{score}:{flag_str}:gitworkshop2026"
             calc = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:4].upper()
@@ -70,7 +67,6 @@ class GitQuestValidator:
         self.total_score = 0
 
     def evaluate(self):
-        """Evaluate repository against the 7 action plan tasks."""
         self.results = []
         self.total_score = 0
         task_flags = [False] * 7
@@ -94,7 +90,6 @@ class GitQuestValidator:
         })
 
         if not t1_pass:
-            # Cannot check remaining local git tasks if not a git repo
             for i in range(2, 8):
                 pts = [10, 10, 15, 15, 20, 20][i - 2]
                 self.results.append({
@@ -108,7 +103,6 @@ class GitQuestValidator:
             return task_flags
 
         # 2. Create a branch (10 pts)
-        # Check if there is more than 1 branch or current branch is not main/master
         ok, branches_out, _ = run_git_cmd(self.repo_path, ["branch", "--list"])
         branches = [b.replace("*", "").strip() for b in branches_out.split("\n") if b.strip()]
         has_custom_branch = any(b not in ("main", "master") for b in branches)
@@ -131,7 +125,6 @@ class GitQuestValidator:
         })
 
         # 3. Edit a file (10 pts)
-        # Check if README.md exists and has content or commit history
         readme_path = None
         for cand in ["README.md", "readme.md", "README"]:
             p = os.path.join(self.repo_path, cand)
@@ -144,7 +137,6 @@ class GitQuestValidator:
             t3_pass = True
             t3_msg = f"Found '{os.path.basename(readme_path)}' ({os.path.getsize(readme_path)} bytes)."
         else:
-            # Check if any tracked files exist
             ok, ls_out, _ = run_git_cmd(self.repo_path, ["ls-files"])
             if ls_out.strip():
                 t3_pass = True
@@ -197,7 +189,6 @@ class GitQuestValidator:
             task_flags[4] = True
             t5_msg = f"Remote configured & pushed branch verified ({len(rbranch_out.splitlines())} remote ref(s))."
         elif has_remote:
-            # Remote configured but maybe not yet pushed or offline fallback
             self.total_score += 10
             task_flags[4] = True
             t5_msg = f"Remote configured ('origin' exists). Run 'git push -u origin <branch>' to push."
@@ -214,7 +205,6 @@ class GitQuestValidator:
         })
 
         # 6. Open a pull request (20 pts)
-        # Interactive confirmation / verification
         print(f"\n{Colors.BRIGHT_CYAN}{Colors.BOLD}--- Interactive Verification (Tasks 6 & 7) ---{Colors.RESET}")
         pr_ans = ask_choice("Did you create a Pull Request on GitHub for your branch?", ["Yes, PR opened on GitHub", "Not yet / Skip"], allow_quit=False)
         t6_pass = (pr_ans == 0)
@@ -260,11 +250,10 @@ def run_quest():
     clear_screen()
     print_banner("GIT QUEST: 100-POINT INDIVIDUAL CHALLENGE", "Automated repository verification & checklist grader", badge="ACTIVITY D")
     print("This tool inspects your local Git practice repository against the Day 2 rubric.")
-    print("Everything is checked locally on your laptop without modifying any files.\n")
+    print("Completion time is tracked for final winner determination!\n")
     
+    start_time = time.time()
     student_name = ask_text("Enter your name or handle", default="Participant")
-    
-    # Select target repository
     default_dir = os.getcwd()
     repo_input = ask_text(f"Path to your practice repository folder", default=default_dir)
     target_repo = os.path.abspath(os.path.expanduser(repo_input))
@@ -272,13 +261,14 @@ def run_quest():
     if not os.path.isdir(target_repo):
         print(f"\n{Colors.RED}Directory not found: {target_repo}{Colors.RESET}")
         pause()
-        return 0
+        return 0, 0.0, False
 
     validator = GitQuestValidator(repo_path=target_repo, student_name=student_name)
     task_flags = validator.evaluate()
+    elapsed_time = round(time.time() - start_time, 1)
     
     clear_screen()
-    print_banner(f"GIT QUEST SCORECARD: {student_name.upper()}", f"Inspected: {target_repo}", badge=f"{validator.total_score}/100 PTS")
+    print_banner(f"GIT QUEST SCORECARD: {student_name.upper()}", f"Time: {format_seconds(elapsed_time)} ({elapsed_time}s)", badge=f"{validator.total_score}/100 PTS")
     
     print(f"{'#':<3} {'TASK':<28} {'STATUS':<15} {'SCORE':<10} {'DETAILS'}")
     print(f"{'─' * 78}")
@@ -288,18 +278,16 @@ def run_quest():
         print(f"{r['num']:<3} {r['title'][:26]:<28} {badge:<22} {r['details']}")
         
     print(f"{'─' * 78}")
-    print(f"\n{Colors.BOLD}FINAL SCORE: {Colors.BRIGHT_GREEN}{validator.total_score} / 100 POINTS{Colors.RESET}")
+    print(f"\n{Colors.BOLD}FINAL SCORE: {Colors.BRIGHT_GREEN}{validator.total_score} / 100 POINTS{Colors.RESET} | {Colors.BOLD}TIME: {format_seconds(elapsed_time)}{Colors.RESET}")
     
-    # Generate verification token
     token = generate_verification_token(student_name, validator.total_score, task_flags)
-    
     token_box = (
         f"PARTICIPANT: {student_name}\n"
         f"SCORE: {validator.total_score} / 100\n"
-        f"OFFICIAL VERIFICATION CODE: {token}\n\n"
-        f"Show this code to the facilitator or enter it into the organizer dashboard."
+        f"TIME TAKEN: {format_seconds(elapsed_time)}\n"
+        f"OFFICIAL VERIFICATION CODE: {token}\n"
     )
     print_box(token_box, title="OFFICIAL COMPLETION CERTIFICATE", color=Colors.BRIGHT_MAGENTA)
     
     pause()
-    return validator.total_score
+    return validator.total_score, elapsed_time, (validator.total_score == 100)

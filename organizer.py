@@ -2,7 +2,7 @@
 """
 organizer.py - Facilitator & Presenter Suite for Git Workshop Day 2.
 Designed for the organizer to run on the presenter laptop connected to the projector.
-Controls stage locks (e.g. unlocking Game 2: Git Detective), displays live leaderboards,
+Controls stage locks (e.g. unlocking Game 2: Git Detective), displays live leaderboards with time tracking,
 projects clues & crime scenes, and verifies participant tokens.
 Zero external dependencies (pure Python 3 standard library).
 """
@@ -20,14 +20,15 @@ from engine.ui import (
     Colors, clear_screen, pause, print_banner,
     print_box, print_terminal_sim, ask_choice, ask_text, get_terminal_width
 )
-from engine.state import STAGE_NAMES, STAGE_PASSWORDS, get_leaderboard
+from engine.state import (
+    STAGE_NAMES, STAGE_PASSWORDS, get_leaderboard, format_seconds, get_first_finishers
+)
 from engine.bingo import load_bingo_items
 from engine.detective import load_detective_cases
 from engine.quest import verify_token
 
-# Track global organizer status
 ORGANIZER_STATUS = {
-    "unlocked": [1], # Stage 1 unlocked by default
+    "unlocked": [1],
     "current_stage": 1
 }
 
@@ -36,12 +37,14 @@ def unlock_stage_manager():
     clear_screen()
     print_banner("ORGANIZER STAGE CONTROLLER", "Release stages for 65 participants", badge="STAGE MANAGER", color=Colors.BRIGHT_YELLOW)
     
-    print("CURRENT STAGE STATUS:")
+    first_finishers = get_first_finishers()
+    print("CURRENT STAGE STATUS & FIRST FINISHERS (+100 PTS BONUS):")
     for s in range(1, 6):
         is_open = s in ORGANIZER_STATUS["unlocked"]
         status_str = f"{Colors.BRIGHT_GREEN}[UNLOCKED - OPEN]{Colors.RESET}" if is_open else f"{Colors.BRIGHT_RED}[LOCKED]{Colors.RESET}"
         pwd = STAGE_PASSWORDS.get(s, "N/A")
-        print(f"  Stage {s}: {STAGE_NAMES[s]:<22} {status_str} (Passcode: {Colors.BOLD}{pwd}{Colors.RESET})")
+        finisher = first_finishers.get(str(s), "None yet (100 pt bonus unclaimed!)")
+        print(f"  Stage {s}: {STAGE_NAMES[s]:<20} {status_str} | Code: {Colors.BOLD}{pwd:<12}{Colors.RESET} | ⚡ 1st: {Colors.YELLOW}{finisher}{Colors.RESET}")
         
     print("\nSelect a stage to toggle unlock/lock:")
     opts = [
@@ -71,7 +74,6 @@ def unlock_stage_manager():
 def project_stage_codes():
     """Project big unlock passcodes on the projector screen for students."""
     clear_screen()
-    width = get_terminal_width()
     print_banner("WORKSHOP STAGE UNLOCK PASSCODES", "Announce or project to all participants", badge="PROJECTOR SCREEN", color=Colors.BRIGHT_CYAN)
     
     code_text = (
@@ -88,14 +90,14 @@ def project_stage_codes():
 
 
 def projector_master_leaderboard():
-    """Fullscreen projector leaderboard updating live."""
+    """Fullscreen projector leaderboard with scores and total elapsed times."""
     clear_screen()
-    print_banner("GIT WORKSHOP ARENA: OFFICIAL LEADERBOARD", "Projector View for All 65 Students", badge="LIVE RANKINGS", color=Colors.BRIGHT_MAGENTA)
+    print_banner("GIT WORKSHOP ARENA: OFFICIAL LEADERBOARD", "Ranked by Score • Tie-broken by Lowest Time", badge="LIVE RANKINGS", color=Colors.BRIGHT_MAGENTA)
     
-    entries = get_leaderboard(limit=20)
-    width = min(get_terminal_width(), 84)
+    entries = get_leaderboard(limit=25)
+    width = min(get_terminal_width(), 86)
     
-    print(f"{'RANK':<8} {'STUDENT NAME':<28} {'CLASS / BATCH':<20} {'TOTAL SCORE'}")
+    print(f"{'RANK':<8} {'STUDENT NAME':<26} {'CLASS / BATCH':<18} {'SCORE':<12} {'TOTAL TIME'}")
     print(f"{'═' * width}")
     
     if not entries:
@@ -115,11 +117,12 @@ def projector_master_leaderboard():
                 rank_str = f"  #{idx:<4}"
                 color = Colors.WHITE
                 
-            name_str = e.get("name", "Student")[:26]
-            class_str = e.get("class_name", "--")[:18]
+            name_str = e.get("name", "Student")[:24]
+            class_str = e.get("class_name", "--")[:16]
             score_str = f"{e.get('score', 0)} PTS"
+            time_str = f"⏱️ {format_seconds(e.get('total_time', 0.0))}"
             
-            print(f"{color}{rank_str:<8} {name_str:<28} {class_str:<20} {Colors.BRIGHT_GREEN}{score_str}{Colors.RESET}")
+            print(f"{color}{rank_str:<8} {name_str:<26} {class_str:<18} {Colors.BRIGHT_GREEN}{score_str:<12}{Colors.RESET} {time_str}")
             
     print(f"{'═' * width}\n")
     pause("Press Enter to return to organizer menu...")
@@ -131,7 +134,7 @@ def projector_bingo():
     clear_screen()
     print_banner("ORGANIZER PROJECTOR: GIT BINGO ROUND", "Present clues on the big screen & reveal answers", badge="PROJECTOR MODE", color=Colors.BRIGHT_MAGENTA)
     print("Project your terminal on the big screen.")
-    print("Display each clue, give students 15–30 seconds to pick the command on their laptops,")
+    print("Display each clue, give students 15–30 seconds to check their unique 3x3 cards,")
     print("then press Enter to reveal the correct command and explanation.\n")
     pause("Press Enter to begin Question 1...")
 
@@ -143,7 +146,7 @@ def projector_bingo():
         prompt_box = f"\n  {Colors.BOLD}{Colors.BRIGHT_YELLOW}{item['prompt']}{Colors.RESET}\n"
         print_box(prompt_box, title=f"CLUE #{i}", color=Colors.BRIGHT_YELLOW)
         
-        print(f"\n{Colors.DIM}>> Students: Select the matching command on your 3x3 Bingo grid! <<{Colors.RESET}")
+        print(f"\n{Colors.DIM}>> Students: Check your card! If you complete 3 in a line, you get BINGO immediately! <<{Colors.RESET}")
         pause("\nPress Enter to REVEAL ANSWER...")
         
         answer_box = (
@@ -301,8 +304,8 @@ def organizer_menu():
         )
         
         options = [
-            "🔓 Stage Unlock Controller (Release Stage 2, 3, 4, 5)",
-            "🏆 Projector View: Live Master Leaderboard (All 65 Students)",
+            "🔓 Stage Unlock Controller (Release Stage 2, 3, 4, 5 & View 1st Finishers)",
+            "🏆 Projector View: Live Master Leaderboard (Scores & Times)",
             "🔑 Project Stage Unlock Codes (Big Screen Display)",
             "📽️  Projector View: Git Bingo (Clues & Answer Reveals)",
             "📽️  Projector View: Git Detective (Crime Scenes & Reveals)",

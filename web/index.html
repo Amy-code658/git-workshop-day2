@@ -30,7 +30,7 @@
     </div>
   </div>
 
-  <!-- HUD Top Bar -->
+  <!-- HUD Top Bar with Player Details & Total Accumulated Time -->
   <header class="hud-bar">
     <div class="hud-title">
       <span>⚡ GIT WORKSHOP ARENA</span>
@@ -43,6 +43,10 @@
       <div class="stat-pill">
         <span>🏫</span>
         <span id="hudClass" class="stat-value">--</span>
+      </div>
+      <div class="stat-pill">
+        <span>⏱️ TOTAL TIME:</span>
+        <span id="hudTime" class="stat-value" style="color: var(--accent-cyan);">00:00</span>
       </div>
       <div class="stat-pill">
         <span>🎖️ Rank</span>
@@ -70,8 +74,8 @@
               <div class="mission-icon">🎯</div>
               <div class="mission-details">
                 <h3>Stage 1: Git Bingo</h3>
-                <p>Match Git concepts to commands on your 3x3 interactive card.</p>
-                <span class="mission-time">3:30 – 3:45 PM • Active</span>
+                <p>Match concepts on your unique 3x3 card. <strong>First line wins immediately!</strong></p>
+                <span class="mission-time">3:30 – 3:45 PM • Active • First Finisher Bonus: +100 pts</span>
               </div>
             </div>
             <div class="mission-action">
@@ -86,7 +90,7 @@
               <div class="mission-details">
                 <h3>Stage 2: Git Detective</h3>
                 <p>Diagnose real-world terminal errors and pick the right command.</p>
-                <span class="mission-time">3:45 – 4:10 PM • Stage 2</span>
+                <span class="mission-time">3:45 – 4:10 PM • Stage 2 • First Finisher Bonus: +100 pts</span>
               </div>
             </div>
             <div class="mission-action" id="actionStage2">
@@ -101,7 +105,7 @@
               <div class="mission-details">
                 <h3>Stage 3: Branching & Merging</h3>
                 <p>Guided interactive companion for the facilitator's live demo.</p>
-                <span class="mission-time">4:10 – 4:40 PM • Stage 3</span>
+                <span class="mission-time">4:10 – 4:40 PM • Stage 3 • First Finisher Bonus: +100 pts</span>
               </div>
             </div>
             <div class="mission-action" id="actionStage3">
@@ -116,7 +120,7 @@
               <div class="mission-details">
                 <h3>Stage 4: Git Quest (100 Pts)</h3>
                 <p>Automated evaluation of your laptop's actual Git repository.</p>
-                <span class="mission-time">4:40 – 5:10 PM • Stage 4</span>
+                <span class="mission-time">4:40 – 5:10 PM • Stage 4 • First Finisher Bonus: +100 pts</span>
               </div>
             </div>
             <div class="mission-action" id="actionStage4">
@@ -131,7 +135,7 @@
               <div class="mission-details">
                 <h3>Stage 5: Final Showdown</h3>
                 <p>Rapid-fire 10-question sprint testing speed and accuracy.</p>
-                <span class="mission-time">5:10 – 5:30 PM • Stage 5</span>
+                <span class="mission-time">5:10 – 5:30 PM • Stage 5 • First Finisher Bonus: +100 pts</span>
               </div>
             </div>
             <div class="mission-action" id="actionStage5">
@@ -142,10 +146,13 @@
         </div>
       </section>
 
-      <!-- Live Leaderboard Sidebar -->
+      <!-- Live Leaderboard Sidebar with Time Tracking -->
       <aside class="leaderboard-section">
         <h2>🏆 LIVE LEADERBOARD</h2>
         <div class="leaderboard-panel">
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">
+            Ranked by <strong>Score</strong>, tie-broken by <strong>Lowest Total Time</strong>.
+          </p>
           <ul id="leaderboardList" class="leaderboard-list">
             <li class="leaderboard-item">
               <span class="leaderboard-rank">#1</span>
@@ -178,16 +185,26 @@
     </div>
   </div>
 
-  <!-- Git Bingo Modal -->
+  <!-- Git Bingo Modal (With Active Timer + Skip Button) -->
   <div id="bingoModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 style="color: var(--accent-cyan);">🎯 GIT BINGO — LAPTOP EDITION</h3>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 style="color: var(--accent-cyan); margin: 0;">🎯 GIT BINGO</h3>
+          <span style="background: rgba(0,240,255,0.15); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">
+            ⏱️ <span id="bingoTimerDisplay">00:00</span>
+          </span>
+        </div>
         <button class="modal-close" onclick="closeModal('bingoModal')">✕</button>
       </div>
-      <div id="bingoQuestionArea" style="background: var(--bg-card); padding: 16px; border-radius: 8px; border-left: 4px solid var(--accent-yellow);">
-        <p style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: bold;">CURRENT CLUE:</p>
-        <h4 id="bingoClueText" style="margin-top: 4px; font-size: 1.15rem; color: #fff;">Loading clue...</h4>
+      <div id="bingoQuestionArea" style="background: var(--bg-card); padding: 16px; border-radius: 8px; border-left: 4px solid var(--accent-yellow); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <p style="font-size: 0.8rem; color: var(--accent-yellow); font-weight: bold;">CURRENT CALL:</p>
+          <h4 id="bingoClueText" style="margin-top: 4px; font-size: 1.05rem; color: #fff;">Loading clue...</h4>
+        </div>
+        <button onclick="skipBingoClue()" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: #fff; padding: 8px 14px; border-radius: 6px; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">
+          Not on my card ➔
+        </button>
       </div>
       <div class="bingo-grid" id="bingoGrid"></div>
       <div id="bingoFeedback" style="min-height: 48px; font-size: 0.95rem; margin-top: 10px;"></div>
@@ -198,7 +215,12 @@
   <div id="detectiveModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 style="color: var(--accent-yellow);" id="detectiveTitle">🕵️ GIT DETECTIVE: CASE 1</h3>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 style="color: var(--accent-yellow); margin: 0;" id="detectiveTitle">🕵️ GIT DETECTIVE</h3>
+          <span style="background: rgba(241,224,90,0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">
+            ⏱️ <span id="detectiveTimerDisplay">00:00</span>
+          </span>
+        </div>
         <button class="modal-close" onclick="closeModal('detectiveModal')">✕</button>
       </div>
       <p id="detectiveScenario" style="color: var(--text-muted); margin-bottom: 12px;"></p>
@@ -221,7 +243,12 @@
   <div id="branchingModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 style="color: var(--accent-cyan);">🌿 BRANCHING & MERGING WORKFLOW</h3>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 style="color: var(--accent-cyan); margin: 0;">🌿 BRANCHING & MERGING WORKFLOW</h3>
+          <span style="background: rgba(0,240,255,0.15); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">
+            ⏱️ <span id="branchingTimerDisplay">00:00</span>
+          </span>
+        </div>
         <button class="modal-close" onclick="closeModal('branchingModal')">✕</button>
       </div>
       <p style="color: var(--text-muted); margin-bottom: 16px;">
@@ -235,7 +262,12 @@
   <div id="questModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 style="color: var(--accent-green-bright);">⚔️ GIT QUEST: 100-POINT CHALLENGE</h3>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 style="color: var(--accent-green-bright); margin: 0;">⚔️ GIT QUEST: 100-POINT CHALLENGE</h3>
+          <span style="background: rgba(57,211,83,0.15); color: var(--accent-green-bright); border: 1px solid var(--accent-green-bright); padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">
+            ⏱️ <span id="questTimerDisplay">00:00</span>
+          </span>
+        </div>
         <button class="modal-close" onclick="closeModal('questModal')">✕</button>
       </div>
       <p style="color: var(--text-muted); margin-bottom: 16px;">
@@ -253,7 +285,12 @@
   <div id="showdownModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 style="color: var(--accent-purple);" id="showdownHeader">⚡ THE FINAL SHOWDOWN</h3>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 style="color: var(--accent-purple); margin: 0;" id="showdownHeader">⚡ THE FINAL SHOWDOWN</h3>
+          <span style="background: rgba(188,140,255,0.15); color: var(--accent-purple); border: 1px solid var(--accent-purple); padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">
+            ⏱️ <span id="showdownTimerDisplay">00:00</span>
+          </span>
+        </div>
         <button class="modal-close" onclick="closeModal('showdownModal')">✕</button>
       </div>
       <div id="showdownArea">

@@ -1,9 +1,10 @@
 /* ==========================================================================
    Git Workshop Day 2: Terminal Games Suite - Frontend Engine
    Vanilla JS (No external libraries or CDNs)
+   Features: Stop-on-Bingo, Unique Cards, Live Game Timers, First-Finisher Bonuses
    ========================================================================== */
 
-// Web Audio API Synthesizer (Zero sound files needed!)
+// Web Audio API Synthesizer
 const AudioFX = {
   ctx: null,
   init() {
@@ -38,19 +39,39 @@ const AudioFX = {
     this.playTone(180, 'sawtooth', 0.25, 0.1);
   },
   bingo() {
-    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
-      this.playTone(freq, 'triangle', 0.2, idx * 0.1);
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, idx) => {
+      this.playTone(freq, 'triangle', 0.25, idx * 0.1);
+    });
+  },
+  firstPlace() {
+    [587.33, 739.99, 880.0, 1174.66].forEach((freq, idx) => {
+      this.playTone(freq, 'square', 0.3, idx * 0.12);
     });
   }
 };
 
-let currentProfile = { name: '', class_name: '', score: 0, unlocked_stages: [1] };
+let currentProfile = {
+  name: '',
+  class_name: '',
+  score: 0,
+  total_time: 0.0,
+  formatted_time: '00:00',
+  unlocked_stages: [1]
+};
+
 let targetUnlockStage = 2;
-let bingoData = [];
+let activeGameStartTime = null;
+let activeGameTimerInterval = null;
+
+// Game state variables
+let bingoPool = [];
 let bingoGrid = [];
 let bingoClueIndex = 0;
+let bingoOver = false;
+
 let detectiveCases = [];
 let detectiveCaseIndex = 0;
+
 let showdownQuestions = [];
 let showdownIndex = 0;
 let showdownScore = 0;
@@ -60,6 +81,36 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   startPolling();
 });
+
+function formatSeconds(secs) {
+  const s = Math.round(Number(secs) || 0);
+  const m = Math.floor(s / 60);
+  const remainingSecs = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(remainingSecs).padStart(2, '0')}`;
+}
+
+function startRoundTimer(displayElId) {
+  if (activeGameTimerInterval) clearInterval(activeGameTimerInterval);
+  activeGameStartTime = Date.now();
+  const el = document.getElementById(displayElId);
+  if (el) el.textContent = '00:00';
+
+  activeGameTimerInterval = setInterval(() => {
+    const elapsedSecs = (Date.now() - activeGameStartTime) / 1000;
+    if (el) el.textContent = formatSeconds(elapsedSecs);
+  }, 500);
+}
+
+function stopRoundTimer() {
+  if (activeGameTimerInterval) {
+    clearInterval(activeGameTimerInterval);
+    activeGameTimerInterval = null;
+  }
+  if (!activeGameStartTime) return 0.0;
+  const elapsed = (Date.now() - activeGameStartTime) / 1000;
+  activeGameStartTime = null;
+  return Math.round(elapsed * 10) / 10;
+}
 
 // --------------------------------------------------------------------------
 // Profile & Initialization
@@ -86,6 +137,7 @@ function updateHud() {
   document.getElementById('hudName').textContent = currentProfile.name || 'Guest';
   document.getElementById('hudClass').textContent = currentProfile.class_name || '--';
   document.getElementById('hudScore').textContent = currentProfile.score || 0;
+  document.getElementById('hudTime').textContent = currentProfile.formatted_time || '00:00';
 }
 
 function setupEventListeners() {
@@ -148,7 +200,6 @@ function handleStageClick(stageNum, launchFunc) {
   if (currentProfile.unlocked_stages && currentProfile.unlocked_stages.includes(stageNum)) {
     launchFunc();
   } else {
-    // Open passcode unlock modal
     targetUnlockStage = stageNum;
     document.getElementById('unlockModalTitle').textContent = `🔒 STAGE ${stageNum} LOCKED`;
     document.getElementById('unlockPasscode').value = '';
@@ -192,14 +243,12 @@ function startPolling() {
   fetchLeaderboard();
   setInterval(async () => {
     try {
-      // Check stage lock updates from organizer
       const statusRes = await fetch('/api/status');
       const statusData = await statusRes.json();
       if (statusData.unlocked) {
         currentProfile.unlocked_stages = statusData.unlocked;
         updateMissionsUI(statusData.unlocked);
       }
-      // Update leaderboard
       fetchLeaderboard();
     } catch (e) {}
   }, 3000);
@@ -227,11 +276,13 @@ async function fetchLeaderboard() {
       else if (index === 1) rankBadge = '🥈';
       else if (index === 2) rankBadge = '🥉';
 
+      const timeDisplay = item.formatted_time || formatSeconds(item.total_time);
+
       li.innerHTML = `
         <span class="leaderboard-rank">${rankBadge}</span>
         <div class="leaderboard-user">
           <span class="leaderboard-name">${escapeHtml(item.name)}</span>
-          <span class="leaderboard-class">${escapeHtml(item.class_name)}</span>
+          <span class="leaderboard-class">${escapeHtml(item.class_name)} • ⏱️ ${timeDisplay}</span>
         </div>
         <span class="leaderboard-score">${item.score} pts</span>
       `;
@@ -242,21 +293,39 @@ async function fetchLeaderboard() {
   } catch (e) {}
 }
 
-async function addPoints(stageNum, points) {
+async function addPoints(stageNum, points, timeTaken = 0.0, isCompletion = false) {
   try {
     const res = await fetch('/api/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage: stageNum, points })
+      body: JSON.stringify({
+        stage: stageNum,
+        points: points,
+        time_taken: timeTaken,
+        is_completion: isCompletion
+      })
     });
     const data = await res.json();
     currentProfile.score = data.score;
+    currentProfile.total_time = data.total_time;
+    currentProfile.formatted_time = data.formatted_time;
     updateHud();
     fetchLeaderboard();
+
+    // Check if 1st finisher speed bonus was won!
+    if (data.is_first && data.bonus_pts > 0) {
+      AudioFX.firstPlace();
+      showFirstPlaceCelebration(stageNum, data.bonus_pts);
+    }
   } catch (e) {}
 }
 
+function showFirstPlaceCelebration(stageNum, bonusPts) {
+  alert(`⚡⚡⚡ FIRST FINISHER SPEED BONUS! ⚡⚡⚡\nYou were the FIRST person to complete Stage ${stageNum}!\n+${bonusPts} BONUS POINTS added to your score!`);
+}
+
 function closeModal(modalId) {
+  stopRoundTimer();
   document.getElementById(modalId).style.display = 'none';
 }
 
@@ -265,21 +334,25 @@ function escapeHtml(str) {
 }
 
 // --------------------------------------------------------------------------
-// 🎯 Activity 1: Git Bingo Game
+// 🎯 Activity 1: Git Bingo Game (STOP ON BINGO + UNIQUE CARDS)
 // --------------------------------------------------------------------------
 async function openBingo() {
   AudioFX.init();
   const res = await fetch('/api/bingo/items');
   const allItems = await res.json();
   
-  // Pick 9 items randomly for 3x3 board
-  const shuffled = [...allItems].sort(() => 0.5 - Math.random());
-  bingoGrid = shuffled.slice(0, 9).map(item => ({ ...item, marked: false }));
-  bingoData = [...bingoGrid].sort(() => 0.5 - Math.random());
+  bingoOver = false;
+  // Unique random 3x3 card for this player
+  const shuffledCard = [...allItems].sort(() => 0.5 - Math.random()).slice(0, 9);
+  bingoGrid = shuffledCard.map(item => ({ ...item, marked: false }));
+  
+  // Clues are called from the master pool in randomized order
+  bingoPool = [...allItems].sort(() => 0.5 - Math.random());
   bingoClueIndex = 0;
 
   renderBingoBoard();
   showCurrentBingoClue();
+  startRoundTimer('bingoTimerDisplay');
   document.getElementById('bingoModal').style.display = 'flex';
 }
 
@@ -297,35 +370,72 @@ function renderBingoBoard() {
 }
 
 function showCurrentBingoClue() {
-  if (bingoClueIndex >= bingoData.length) {
-    document.getElementById('bingoClueText').textContent = '🎉 All clues completed! Great job on Git Bingo!';
+  if (bingoOver) return;
+
+  if (bingoClueIndex >= bingoPool.length) {
+    const elapsed = stopRoundTimer();
+    document.getElementById('bingoClueText').textContent = 'All clues called! Bingo round finished.';
+    addPoints(1, 0, elapsed, true);
     return;
   }
-  const current = bingoData[bingoClueIndex];
-  document.getElementById('bingoClueText').textContent = `[Clue ${bingoClueIndex + 1}/${bingoData.length}]: ${current.prompt}`;
+
+  const current = bingoPool[bingoClueIndex];
+  document.getElementById('bingoClueText').textContent = `[Call #${bingoClueIndex + 1} of ${bingoPool.length}]: ${current.prompt}`;
 }
 
 function onBingoCellClick(idx) {
-  if (bingoClueIndex >= bingoData.length) return;
-  const targetItem = bingoData[bingoClueIndex];
+  if (bingoOver || bingoClueIndex >= bingoPool.length) return;
+  const currentClue = bingoPool[bingoClueIndex];
   const clicked = bingoGrid[idx];
   const feedbackEl = document.getElementById('bingoFeedback');
 
-  if (clicked.command === targetItem.command) {
+  if (clicked.command === currentClue.command) {
     if (!clicked.marked) {
       clicked.marked = true;
       AudioFX.success();
-      addPoints(1, 20);
-      feedbackEl.innerHTML = `<span style="color:#39d353; font-weight:bold;">✔ CORRECT!</span> Marked square '${clicked.command}' (+20 pts).<br><small style="color:#8b949e;">${targetItem.explanation}</small>`;
-      checkBingoWin();
+      feedbackEl.innerHTML = `<span style="color:#39d353; font-weight:bold;">✔ CORRECT!</span> Marked square '${clicked.command}' (+20 pts).`;
+      
+      // Check for BINGO! If 3 in a line, STOP IMMEDIATELY!
+      const hasBingo = checkBingoWin();
+      if (hasBingo) {
+        bingoOver = true;
+        const elapsed = stopRoundTimer();
+        AudioFX.bingo();
+        
+        // Award points + Bingo 50 pts + completion flag (checks first finisher bonus)
+        addPoints(1, 70, elapsed, true); // 20 pts + 50 pts bingo
+        
+        renderBingoBoard();
+        feedbackEl.innerHTML = `
+          <div style="background: rgba(46,160,67,0.25); border: 2px solid #39d353; padding: 16px; border-radius: 8px; text-align: center; margin-top: 10px;">
+            <h2 style="color: #39d353; margin-bottom: 6px;">🎉🎉🎉 BINGO ACHIEVED! 🎉🎉🎉</h2>
+            <p style="font-size: 1.1rem; color: #fff;">You completed 3 in a line in <strong>${formatSeconds(elapsed)} (${elapsed}s)</strong>!</p>
+            <p style="color: #bc8cff; font-weight: bold; margin-top: 4px;">Game stops immediately! Points & time submitted to leaderboard.</p>
+            <button class="btn-primary" style="margin-top: 12px; max-width: 200px;" onclick="closeModal('bingoModal')">COLLECT & RETURN 🏆</button>
+          </div>
+        `;
+        document.getElementById('bingoClueText').textContent = '🎉 BINGO COMPLETED! You won!';
+        return;
+      } else {
+        addPoints(1, 20, 0, false);
+      }
     }
-    bingoClueIndex++;
     renderBingoBoard();
-    setTimeout(showCurrentBingoClue, 1200);
+    bingoClueIndex++;
+    setTimeout(showCurrentBingoClue, 1000);
   } else {
     AudioFX.error();
-    feedbackEl.innerHTML = `<span style="color:#f85149; font-weight:bold;">✘ NOT QUITE!</span> You clicked '${clicked.command}'. Look for '${targetItem.command}'.`;
+    feedbackEl.innerHTML = `<span style="color:#f85149; font-weight:bold;">✘ NOT QUITE!</span> You clicked '${clicked.command}'. Look for '${currentClue.command}'.`;
   }
+}
+
+function skipBingoClue() {
+  if (bingoOver) return;
+  const currentClue = bingoPool[bingoClueIndex];
+  const feedbackEl = document.getElementById('bingoFeedback');
+  feedbackEl.innerHTML = `<span style="color:#8b949e;">Clue skipped ('${currentClue.command}' was not marked). Next clue called...</span>`;
+  bingoClueIndex++;
+  showCurrentBingoClue();
 }
 
 function checkBingoWin() {
@@ -334,17 +444,7 @@ function checkBingoWin() {
     [0,3,6], [1,4,7], [2,5,8], // Columns
     [0,4,8], [2,4,6]           // Diagonals
   ];
-  for (let line of lines) {
-    if (line.every(i => bingoGrid[i].marked)) {
-      if (!bingoGrid._bingoAwarded) {
-        bingoGrid._bingoAwarded = true;
-        AudioFX.bingo();
-        addPoints(1, 50);
-        alert('🎉🎉🎉 BINGO! You connected 3 in a line! (+50 BONUS POINTS) 🎉🎉🎉');
-      }
-      break;
-    }
-  }
+  return lines.some(line => line.every(i => bingoGrid[i].marked));
 }
 
 // --------------------------------------------------------------------------
@@ -356,13 +456,16 @@ async function openDetective() {
   detectiveCases = await res.json();
   detectiveCaseIndex = 0;
   loadDetectiveCase();
+  startRoundTimer('detectiveTimerDisplay');
   document.getElementById('detectiveModal').style.display = 'flex';
 }
 
 function loadDetectiveCase() {
   if (detectiveCaseIndex >= detectiveCases.length) {
+    const elapsed = stopRoundTimer();
+    addPoints(2, 0, elapsed, true);
     document.getElementById('detectiveTitle').textContent = '🕵️ ALL CASES SOLVED!';
-    document.getElementById('detectiveScenario').textContent = 'Congratulations! You solved every crime scene case!';
+    document.getElementById('detectiveScenario').textContent = `You solved all cases in ${formatSeconds(elapsed)}!`;
     document.getElementById('detectiveTerminal').innerHTML = '<span class="cmd">Investigation Complete: 100% Case Clearance Rate!</span>';
     document.getElementById('detectiveOptions').innerHTML = '';
     return;
@@ -391,12 +494,15 @@ function selectDetectiveOption(selectedIdx) {
   const fb = document.getElementById('detectiveFeedback');
   if (selectedIdx === c.correct_index) {
     AudioFX.success();
-    addPoints(2, 20);
+    const isLast = (detectiveCaseIndex === detectiveCases.length - 1);
+    const elapsed = isLast ? stopRoundTimer() : 0.0;
+    addPoints(2, 20, elapsed, isLast);
+
     fb.innerHTML = `
       <div style="background: rgba(46,160,67,0.15); border: 1px solid #39d353; padding: 12px; border-radius: 6px;">
         <span style="color:#39d353; font-weight:bold;">✔ CASE SOLVED! (+20 Points)</span><br>
         <p style="margin-top:6px; font-size:0.9rem;">${escapeHtml(c.explanation)}</p>
-        <button class="btn-play" style="margin-top:10px;" onclick="nextDetectiveCase()">NEXT CASE ➔</button>
+        <button class="btn-play" style="margin-top:10px;" onclick="nextDetectiveCase()">${isLast ? 'FINISH INVESTIGATION ➔' : 'NEXT CASE ➔'}</button>
       </div>
     `;
   } else {
@@ -419,6 +525,7 @@ function nextDetectiveCase() {
 // --------------------------------------------------------------------------
 function openBranching() {
   AudioFX.init();
+  startRoundTimer('branchingTimerDisplay');
   const container = document.getElementById('branchingStepsContainer');
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:14px;">
@@ -453,9 +560,10 @@ function openBranching() {
 }
 
 function claimBranchingPoints() {
+  const elapsed = stopRoundTimer();
   AudioFX.success();
-  addPoints(3, 20);
-  alert('Workflow Completed! 20 points awarded.');
+  addPoints(3, 20, elapsed, true);
+  alert(`Workflow Completed in ${formatSeconds(elapsed)}! 20 points awarded.`);
   closeModal('branchingModal');
 }
 
@@ -464,6 +572,7 @@ function claimBranchingPoints() {
 // --------------------------------------------------------------------------
 function openQuest() {
   AudioFX.init();
+  startRoundTimer('questTimerDisplay');
   document.getElementById('questResultsArea').innerHTML = '';
   document.getElementById('questModal').style.display = 'flex';
 }
@@ -471,20 +580,22 @@ function openQuest() {
 async function runQuestVerification() {
   const repoPath = document.getElementById('questRepoPath').value.trim();
   const resArea = document.getElementById('questResultsArea');
+  const elapsed = stopRoundTimer();
+  
   resArea.innerHTML = '<p style="color:var(--accent-yellow);">🔍 Inspecting local Git repository...</p>';
 
   try {
     const res = await fetch('/api/quest/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo_path: repoPath })
+      body: JSON.stringify({ repo_path: repoPath, time_taken: elapsed })
     });
     const data = await res.json();
     
     let html = `
       <div style="margin-top:16px; background:var(--bg-card); padding:16px; border-radius:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h4 style="color:#fff;">SCORECARD: ${data.total_score} / 100 POINTS</h4>
+          <h4 style="color:#fff;">SCORECARD: ${data.total_score} / 100 POINTS • ⏱️ ${formatSeconds(elapsed)}</h4>
           <span style="background:#238636; color:#fff; padding:4px 10px; border-radius:4px; font-weight:bold;">${data.token}</span>
         </div>
         <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
@@ -512,7 +623,16 @@ async function runQuestVerification() {
 
     if (data.total_score > 0) {
       AudioFX.success();
-      addPoints(4, data.total_score);
+      currentProfile.score = data.score;
+      currentProfile.total_time = data.total_time;
+      currentProfile.formatted_time = data.formatted_time;
+      updateHud();
+      fetchLeaderboard();
+      
+      if (data.is_first && data.bonus_pts > 0) {
+        AudioFX.firstPlace();
+        showFirstPlaceCelebration(4, data.bonus_pts);
+      }
     }
   } catch (err) {
     resArea.innerHTML = '<p style="color:#f85149;">Failed to inspect repository. Make sure the folder path is correct.</p>';
@@ -529,16 +649,19 @@ async function openShowdown() {
   showdownIndex = 0;
   showdownScore = 0;
   loadShowdownQuestion();
+  startRoundTimer('showdownTimerDisplay');
   document.getElementById('showdownModal').style.display = 'flex';
 }
 
 function loadShowdownQuestion() {
   if (showdownIndex >= showdownQuestions.length) {
+    const elapsed = stopRoundTimer();
+    addPoints(5, 0, elapsed, true);
     document.getElementById('showdownHeader').textContent = '⚡ SHOWDOWN COMPLETE!';
     document.getElementById('showdownArea').innerHTML = `
       <div style="text-align:center; padding:20px;">
         <h2 style="color:#39d353;">Final Quiz Complete!</h2>
-        <p style="margin:12px 0; font-size:1.1rem;">You scored ${showdownScore} points in the Grand Finale!</p>
+        <p style="margin:12px 0; font-size:1.1rem;">You scored ${showdownScore} points in <strong>${formatSeconds(elapsed)}</strong>!</p>
         <button class="btn-primary" onclick="closeModal('showdownModal')">WRAP UP 🏆</button>
       </div>
     `;
@@ -567,16 +690,21 @@ function selectShowdownOption(idx) {
   if (idx === q.correct_index) {
     AudioFX.success();
     showdownScore += 10;
-    addPoints(5, 10);
+    const isLast = (showdownIndex === showdownQuestions.length - 1);
+    const elapsed = isLast ? stopRoundTimer() : 0.0;
+    addPoints(5, 10, elapsed, isLast);
+
     fb.innerHTML = `
       <div style="color:#39d353; font-weight:bold; margin-bottom:10px;">✔ CORRECT! (+10 pts)</div>
-      <button class="btn-play" onclick="nextShowdownQuestion()">NEXT QUESTION ➔</button>
+      <button class="btn-play" onclick="nextShowdownQuestion()">${isLast ? 'SEE RESULTS ➔' : 'NEXT QUESTION ➔'}</button>
     `;
   } else {
     AudioFX.error();
+    const isLast = (showdownIndex === showdownQuestions.length - 1);
+    if (isLast) stopRoundTimer();
     fb.innerHTML = `
       <div style="color:#f85149; font-weight:bold; margin-bottom:10px;">✘ INCORRECT. Correct answer: ${escapeHtml(q.options[q.correct_index])}</div>
-      <button class="btn-play" onclick="nextShowdownQuestion()">CONTINUE ➔</button>
+      <button class="btn-play" onclick="nextShowdownQuestion()">${isLast ? 'SEE RESULTS ➔' : 'CONTINUE ➔'}</button>
     `;
   }
 }
