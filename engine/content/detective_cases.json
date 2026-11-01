@@ -1,0 +1,110 @@
+[
+  {
+    "id": "case_1",
+    "title": "The Ghost Commit",
+    "difficulty": "Beginner",
+    "scenario": "Participant Taylor modified README.md and immediately ran 'git commit -m \"Update intro\"', but Git printed the message below. Taylor is confused why the commit did not record the changes.",
+    "command_sim": "git commit -m \"Update intro\"",
+    "output_sim": "On branch main\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   README.md\n\nno changes added to commit (use \"git add\")",
+    "question": "What critical step was missed before running git commit, and how should Taylor fix it?",
+    "options": [
+      "README.md was not staged; run 'git add README.md' first.",
+      "The branch was locked; run 'git branch --unlock'.",
+      "Git needs an empty commit flag; run 'git commit --allow-empty'.",
+      "The file must be renamed to README.txt before committing."
+    ],
+    "correct_index": 0,
+    "explanation": "In Git, changes in your working tree must first be staged (indexed) before they can be committed. Taylor need to run 'git add README.md' (or 'git add .') to stage the modifications before committing.",
+    "pro_tip": "Think of staging as packing items into a box ('git add'), and committing as taping the box shut with a label ('git commit')."
+  },
+  {
+    "id": "case_2",
+    "title": "The Mysterious Modified Files",
+    "difficulty": "Beginner",
+    "scenario": "Alex just pulled a seat at the laptop after a quick break and forgot which files were edited before lunch. How can Alex quickly inspect which files have changed in the workspace?",
+    "command_sim": "git ???",
+    "output_sim": "On branch main\nYour branch is up to date with 'origin/main'.\n\nChanges not staged for commit:\n\tmodified:   index.html\n\tmodified:   styles.css\n\nUntracked files:\n\tnotes.txt",
+    "question": "Which command displays this exact overview of modified and untracked files?",
+    "options": [
+      "git log",
+      "git status",
+      "git show",
+      "git check"
+    ],
+    "correct_index": 1,
+    "explanation": "'git status' is your radar in Git. It reports current branch status, uncommitted changes, staged files, and untracked files.",
+    "pro_tip": "Run 'git status' before and after every major command—it's the safest habit in version control."
+  },
+  {
+    "id": "case_3",
+    "title": "The Time Machine Investigation",
+    "difficulty": "Beginner",
+    "scenario": "The team noticed a bug introduced yesterday. Jordan wants to view the history of past commits, including who authored them, their timestamps, and the commit messages.",
+    "command_sim": "git ???",
+    "output_sim": "commit 9f4a1c2b4e82d7e1039804b7c10d3f2a1b5e3c7a (HEAD -> main)\nAuthor: Jordan <jordan@example.com>\nDate:   Sun Nov 1 14:22:00 2026 +0530\n\n    Add navigation menu\n\ncommit e2b58d1039804b7c10d3f2a1b5e3c7a9f4a1c2b4\nAuthor: Amy <amy@example.com>\nDate:   Sun Nov 1 12:15:30 2026 +0530\n\n    Initial commit",
+    "question": "Which command allowed Jordan to inspect this chronological history of commits?",
+    "options": [
+      "git history",
+      "git status",
+      "git log",
+      "git blame"
+    ],
+    "correct_index": 2,
+    "explanation": "'git log' displays the full commit history starting from the most recent commit back to the beginning of the repository.",
+    "pro_tip": "Use 'git log --oneline --graph' to get a concise, beautiful tree visualization of your project's history."
+  },
+  {
+    "id": "case_4",
+    "title": "The Missing Local Copy",
+    "difficulty": "Beginner",
+    "scenario": "A student finds an open-source practice project on GitHub at 'https://github.com/git-workshop/practice-repo.git' and wants to download a full local copy of the code and Git history onto their laptop.",
+    "command_sim": "git ??? https://github.com/git-workshop/practice-repo.git",
+    "output_sim": "Cloning into 'practice-repo'...\nremote: Enumerating objects: 24, done.\nremote: Counting objects: 100% (24/24), done.\nremote: Compressing objects: 100% (18/18), done.\nReceiving objects: 100% (24/24), 4.12 KiB | 4.12 MiB/s, done.",
+    "question": "Which command downloads an existing GitHub repository onto your laptop?",
+    "options": [
+      "git init https://github.com/git-workshop/practice-repo.git",
+      "git clone https://github.com/git-workshop/practice-repo.git",
+      "git download https://github.com/git-workshop/practice-repo.git",
+      "git pull https://github.com/git-workshop/practice-repo.git"
+    ],
+    "correct_index": 1,
+    "explanation": "'git clone <URL>' downloads a complete duplicate of the remote repository, creates a folder, and sets up the 'origin' remote automatically.",
+    "pro_tip": "Use 'git clone' only once per project. After that, use 'git pull' to fetch future updates."
+  },
+  {
+    "id": "case_5",
+    "title": "The Feature Isolation Mission",
+    "difficulty": "Intermediate",
+    "scenario": "During Day 2's collaborative demo, the facilitator instructs everyone to create a new branch named 'add-my-section' so they don't modify 'main' directly, and switch to it immediately in one command.",
+    "command_sim": "git ??? add-my-section",
+    "output_sim": "Switched to a new branch 'add-my-section'",
+    "question": "What is the recommended modern Git command to create and switch to a branch simultaneously?",
+    "options": [
+      "git branch -m add-my-section",
+      "git switch -c add-my-section",
+      "git merge add-my-section",
+      "git push origin add-my-section"
+    ],
+    "correct_index": 1,
+    "explanation": "'git switch -c <branch-name>' creates and switches to the new branch in a single command. ('git checkout -b <branch-name>' also works in older Git versions).",
+    "pro_tip": "Branches let you experiment safely without breaking working code on the 'main' branch."
+  },
+  {
+    "id": "case_6",
+    "title": "The Cloud Leap",
+    "difficulty": "Intermediate",
+    "scenario": "A student made a commit on their new branch 'add-my-section'. When they tried running just 'git push', Git paused with the message below.",
+    "command_sim": "git push",
+    "output_sim": "fatal: The current branch add-my-section has no upstream branch.\nTo push the current branch and set the remote as upstream, use\n\n    git push --set-upstream origin add-my-section",
+    "question": "What should the student do to publish this new branch to GitHub for the first time?",
+    "options": [
+      "Run 'git push -u origin add-my-section' (or --set-upstream).",
+      "Delete the branch with 'git branch -D add-my-section' and try on main.",
+      "Re-initialize Git with 'git init --force'.",
+      "Turn off the Wi-Fi and push locally."
+    ],
+    "correct_index": 0,
+    "explanation": "When pushing a brand new local branch for the first time, GitHub doesn't know about it yet. The '-u' (or '--set-upstream') flag tells Git to create a matching remote branch and link your local branch to it.",
+    "pro_tip": "Once upstream is configured with '-u', all future pushes on that branch can be done with just 'git push'!"
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "status",
+    "command": "git status",
+    "prompt": "Which command checks the working tree and shows whether files are modified, staged, or untracked?",
+    "explanation": "'git status' provides a full health check of your working tree, staging area, and branch state."
+  },
+  {
+    "id": "commit",
+    "command": "git commit",
+    "prompt": "Which command records a permanent snapshot of your staged changes with a descriptive message?",
+    "explanation": "'git commit -m \"message\"' stores staged changes into the repository history as a new snapshot."
+  },
+  {
+    "id": "push",
+    "command": "git push",
+    "prompt": "Which command uploads your local commits to a remote repository on GitHub?",
+    "explanation": "'git push' (or 'git push -u origin <branch>') syncs your local work to GitHub so others can view it."
+  },
+  {
+    "id": "add",
+    "command": "git add",
+    "prompt": "Which command moves changes from your working directory into the staging area (index)?",
+    "explanation": "'git add <file>' stages files so Git knows what to include in the upcoming commit."
+  },
+  {
+    "id": "init",
+    "command": "git init",
+    "prompt": "Which command turns a regular folder on your laptop into a brand new Git repository?",
+    "explanation": "'git init' creates a hidden .git directory and initializes version tracking for the folder."
+  },
+  {
+    "id": "log",
+    "command": "git log",
+    "prompt": "Which command displays the chronological history of earlier commits, their authors, and commit IDs?",
+    "explanation": "'git log' lets you inspect past commits, timestamps, and commit messages."
+  },
+  {
+    "id": "clone",
+    "command": "git clone",
+    "prompt": "Which command downloads an exact local copy of an existing remote repository onto your computer?",
+    "explanation": "'git clone <URL>' fetches all commits, files, and branches from GitHub to your laptop."
+  },
+  {
+    "id": "switch_c",
+    "command": "git switch -c",
+    "prompt": "Which modern command creates a brand new branch and switches onto it in a single step?",
+    "explanation": "'git switch -c <branch-name>' creates and switches to a new branch (cleaner than older checkout syntax)."
+  },
+  {
+    "id": "pull",
+    "command": "git pull",
+    "prompt": "Which command fetches and merges changes from GitHub directly into your current local branch?",
+    "explanation": "'git pull' downloads upstream commits from GitHub and integrates them into your current local branch."
+  },
+  {
+    "id": "diff",
+    "command": "git diff",
+    "prompt": "Which command shows the exact line-by-line differences between your working files and the last commit?",
+    "explanation": "'git diff' shows additions (+) and deletions (-) in your files before you stage them."
+  },
+  {
+    "id": "branch",
+    "command": "git branch",
+    "prompt": "Which command lists all local branches and highlights which branch you are currently on with an asterisk?",
+    "explanation": "'git branch' lists local branches and shows an asterisk (*) next to your active branch."
+  },
+  {
+    "id": "config",
+    "command": "git config",
+    "prompt": "Which command configures your global username and email address used for commit signatures?",
+    "explanation": "'git config --global user.name' and 'user.email' attach your identity to every commit you make."
+  }
+]

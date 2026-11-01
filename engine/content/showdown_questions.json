@@ -1,0 +1,122 @@
+[
+  {
+    "id": "q1",
+    "question": "What is the primary difference between Git and GitHub?",
+    "options": [
+      "Git is local version control software; GitHub is a cloud platform for hosting Git repositories.",
+      "Git is only for Windows; GitHub is only for Mac and Linux.",
+      "Git is a programming language; GitHub is a compiler.",
+      "There is no difference; they are two names for the same software."
+    ],
+    "correct_index": 0,
+    "explanation": "Git is the distributed version control tool that runs on your local machine. GitHub is a cloud-based service that hosts Git repositories and provides collaboration tools like Pull Requests and issues."
+  },
+  {
+    "id": "q2",
+    "question": "Which command prepares all modified and new files in the current folder for the next commit?",
+    "options": [
+      "git save --all",
+      "git commit -a",
+      "git add .",
+      "git push origin"
+    ],
+    "correct_index": 2,
+    "explanation": "'git add .' tells Git to stage all changes in the current directory and its subdirectories."
+  },
+  {
+    "id": "q3",
+    "question": "What is the primary purpose of creating a branch in Git?",
+    "options": [
+      "To back up your operating system files.",
+      "To work on new features or fixes in isolation without affecting the main working code.",
+      "To compress images and save disk space.",
+      "To permanently delete older commits."
+    ],
+    "correct_index": 1,
+    "explanation": "Branching allows you to diverge from the main line of development and continue to work without messing with that main line."
+  },
+  {
+    "id": "q4",
+    "question": "What is a Pull Request (PR) on GitHub?",
+    "options": [
+      "A request to download more RAM for Git.",
+      "A mechanism to propose, review, and discuss changes from a branch before merging them into main.",
+      "An automated command that deletes all commit logs.",
+      "A request sent to GitHub customer support when code has bugs."
+    ],
+    "correct_index": 1,
+    "explanation": "Pull requests let you tell others about changes you've pushed to a branch in a repository on GitHub. Once a PR is opened, you can discuss and review potential changes before merging."
+  },
+  {
+    "id": "q5",
+    "question": "You made changes and ran 'git commit -m \"fixes\"'. Are your commits automatically visible on GitHub?",
+    "options": [
+      "Yes, Git commits sync to GitHub instantaneously in real-time.",
+      "No, you must run 'git push' to upload local commits to GitHub.",
+      "Yes, but only if you have Git installed on Google Chrome.",
+      "No, you must restart your computer first."
+    ],
+    "correct_index": 1,
+    "explanation": "Git is local-first. Commits exist only on your laptop until you explicitly push them to GitHub with 'git push'."
+  },
+  {
+    "id": "q6",
+    "question": "Which command will switch back to the 'main' branch in modern Git?",
+    "options": [
+      "git switch main",
+      "git goto main",
+      "git move main",
+      "git branch main"
+    ],
+    "correct_index": 0,
+    "explanation": "'git switch main' safely changes your working tree to the 'main' branch."
+  },
+  {
+    "id": "q7",
+    "question": "What command should you run to verify which user name is configured for your commits?",
+    "options": [
+      "git whoami",
+      "git config user.name",
+      "git user show",
+      "git account inspect"
+    ],
+    "correct_index": 1,
+    "explanation": "'git config user.name' (or 'git config --global user.name') reads the configured author name."
+  },
+  {
+    "id": "q8",
+    "question": "What does 'origin' usually mean in the command 'git push origin main'?",
+    "options": [
+      "The local hard drive partition where Git is installed.",
+      "The default nickname/alias for the remote repository on GitHub.",
+      "The first commit ever made in the project.",
+      "The name of the branch you want to delete."
+    ],
+    "correct_index": 1,
+    "explanation": "'origin' is the conventional short name given to the remote repository URL that you cloned from or linked via 'git remote add origin'."
+  },
+  {
+    "id": "q9",
+    "question": "What is the recommended practice for writing a commit message?",
+    "options": [
+      "Leave it completely empty so people can guess.",
+      "Write a short, clear imperative description of what changes were made (e.g., 'Add user login').",
+      "Write 'stuff', 'fixed', or 'asdfgh' for all commits.",
+      "Always paste your entire 200-line source code into the commit message."
+    ],
+    "correct_index": 1,
+    "explanation": "Clear commit messages help team members (and future you!) understand why changes were made and navigate project history."
+  },
+  {
+    "id": "q10",
+    "question": "Which command fetches commits made by your teammate on GitHub and merges them into your branch?",
+    "options": [
+      "git push",
+      "git clone",
+      "git pull",
+      "git init"
+    ],
+    "correct_index": 2,
+    "explanation": "'git pull' fetches commits from the remote repository and immediately integrates them into the branch you have checked out."
+  }
+]
