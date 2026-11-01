@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git Workshop Arena — Day 2 Challenges</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <!-- Welcome / Registration Overlay -->
+  <div id="welcomeOverlay" class="welcome-overlay">
+    <div class="welcome-card">
+      <div class="welcome-logo">⚡</div>
+      <h1>GIT ARENA: DAY 2</h1>
+      <p>Enter your details to join the live leaderboard and unlock today's interactive challenges!</p>
+      
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="playerName">Your Full Name</label>
+          <input type="text" id="playerName" class="form-input" placeholder="e.g. Alex Johnson" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="playerClass">Class / Batch / Division</label>
+          <input type="text" id="playerClass" class="form-input" placeholder="e.g. CSE-3A or Grade 11-B" required>
+        </div>
+        <button type="submit" class="btn-primary">ENTER WORKSHOP ARENA 🚀</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- HUD Top Bar -->
+  <header class="hud-bar">
+    <div class="hud-title">
+      <span>⚡ GIT WORKSHOP ARENA</span>
+    </div>
+    <div class="hud-stats">
+      <div class="stat-pill">
+        <span>👤</span>
+        <span id="hudName" class="stat-value">Guest</span>
+      </div>
+      <div class="stat-pill">
+        <span>🏫</span>
+        <span id="hudClass" class="stat-value">--</span>
+      </div>
+      <div class="stat-pill">
+        <span>🎖️ Rank</span>
+        <span id="hudRank" class="stat-value">#-</span>
+      </div>
+      <div class="stat-pill score-badge">
+        <span>🏆 SCORE:</span>
+        <span id="hudScore" class="stat-value">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container Layout -->
+  <main class="app-container">
+    <div class="dashboard-grid">
+      
+      <!-- Missions List -->
+      <section class="missions-section">
+        <h2>🎮 TODAY'S MISSIONS</h2>
+        <div class="mission-cards">
+
+          <!-- Mission 1: Git Bingo -->
+          <div class="mission-card unlocked" id="cardStage1" onclick="openBingo()">
+            <div class="mission-info">
+              <div class="mission-icon">🎯</div>
+              <div class="mission-details">
+                <h3>Stage 1: Git Bingo</h3>
+                <p>Match Git concepts to commands on your 3x3 interactive card.</p>
+                <span class="mission-time">3:30 – 3:45 PM • Active</span>
+              </div>
+            </div>
+            <div class="mission-action">
+              <button class="btn-play">PLAY NOW</button>
+            </div>
+          </div>
+
+          <!-- Mission 2: Git Detective (Locked by default) -->
+          <div class="mission-card locked" id="cardStage2" onclick="handleStageClick(2, openDetective)">
+            <div class="mission-info">
+              <div class="mission-icon">🕵️</div>
+              <div class="mission-details">
+                <h3>Stage 2: Git Detective</h3>
+                <p>Diagnose real-world terminal errors and pick the right command.</p>
+                <span class="mission-time">3:45 – 4:10 PM • Stage 2</span>
+              </div>
+            </div>
+            <div class="mission-action" id="actionStage2">
+              <span class="locked-tag">🔒 LOCKED</span>
+            </div>
+          </div>
+
+          <!-- Mission 3: Branching & Merging -->
+          <div class="mission-card locked" id="cardStage3" onclick="handleStageClick(3, openBranching)">
+            <div class="mission-info">
+              <div class="mission-icon">🌿</div>
+              <div class="mission-details">
+                <h3>Stage 3: Branching & Merging</h3>
+                <p>Guided interactive companion for the facilitator's live demo.</p>
+                <span class="mission-time">4:10 – 4:40 PM • Stage 3</span>
+              </div>
+            </div>
+            <div class="mission-action" id="actionStage3">
+              <span class="locked-tag">🔒 LOCKED</span>
+            </div>
+          </div>
+
+          <!-- Mission 4: Git Quest (100 pts) -->
+          <div class="mission-card locked" id="cardStage4" onclick="handleStageClick(4, openQuest)">
+            <div class="mission-info">
+              <div class="mission-icon">⚔️</div>
+              <div class="mission-details">
+                <h3>Stage 4: Git Quest (100 Pts)</h3>
+                <p>Automated evaluation of your laptop's actual Git repository.</p>
+                <span class="mission-time">4:40 – 5:10 PM • Stage 4</span>
+              </div>
+            </div>
+            <div class="mission-action" id="actionStage4">
+              <span class="locked-tag">🔒 LOCKED</span>
+            </div>
+          </div>
+
+          <!-- Mission 5: Final Showdown -->
+          <div class="mission-card locked" id="cardStage5" onclick="handleStageClick(5, openShowdown)">
+            <div class="mission-info">
+              <div class="mission-icon">⚡</div>
+              <div class="mission-details">
+                <h3>Stage 5: Final Showdown</h3>
+                <p>Rapid-fire 10-question sprint testing speed and accuracy.</p>
+                <span class="mission-time">5:10 – 5:30 PM • Stage 5</span>
+              </div>
+            </div>
+            <div class="mission-action" id="actionStage5">
+              <span class="locked-tag">🔒 LOCKED</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Live Leaderboard Sidebar -->
+      <aside class="leaderboard-section">
+        <h2>🏆 LIVE LEADERBOARD</h2>
+        <div class="leaderboard-panel">
+          <ul id="leaderboardList" class="leaderboard-list">
+            <li class="leaderboard-item">
+              <span class="leaderboard-rank">#1</span>
+              <div class="leaderboard-user">
+                <span class="leaderboard-name">Waiting for scores...</span>
+                <span class="leaderboard-class">Play a game to appear here!</span>
+              </div>
+              <span class="leaderboard-score">0 pts</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Passcode Unlock Modal for Locked Stages -->
+  <div id="unlockModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div class="modal-header">
+        <h3 id="unlockModalTitle">🔒 STAGE LOCKED</h3>
+        <button class="modal-close" onclick="closeModal('unlockModal')">✕</button>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        This stage is currently locked. The workshop organizer will open it when the round starts, or you can enter the organizer's unlock passcode:
+      </p>
+      <input type="text" id="unlockPasscode" class="form-input" placeholder="Enter Unlock Code (e.g. DETECTIVE26)" style="text-align: center; text-transform: uppercase;">
+      <button class="btn-primary" onclick="submitPasscode()" style="margin-top: 15px;">UNLOCK STAGE 🔓</button>
+      <p id="unlockMsg" style="margin-top: 12px; font-size: 0.85rem;"></p>
+    </div>
+  </div>
+
+  <!-- Git Bingo Modal -->
+  <div id="bingoModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-cyan);">🎯 GIT BINGO — LAPTOP EDITION</h3>
+        <button class="modal-close" onclick="closeModal('bingoModal')">✕</button>
+      </div>
+      <div id="bingoQuestionArea" style="background: var(--bg-card); padding: 16px; border-radius: 8px; border-left: 4px solid var(--accent-yellow);">
+        <p style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: bold;">CURRENT CLUE:</p>
+        <h4 id="bingoClueText" style="margin-top: 4px; font-size: 1.15rem; color: #fff;">Loading clue...</h4>
+      </div>
+      <div class="bingo-grid" id="bingoGrid"></div>
+      <div id="bingoFeedback" style="min-height: 48px; font-size: 0.95rem; margin-top: 10px;"></div>
+    </div>
+  </div>
+
+  <!-- Git Detective Modal -->
+  <div id="detectiveModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-yellow);" id="detectiveTitle">🕵️ GIT DETECTIVE: CASE 1</h3>
+        <button class="modal-close" onclick="closeModal('detectiveModal')">✕</button>
+      </div>
+      <p id="detectiveScenario" style="color: var(--text-muted); margin-bottom: 12px;"></p>
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span style="font-size: 0.75rem; color: #8b949e; margin-left: 8px;">evidence_terminal.sh</span>
+        </div>
+        <div class="terminal-body" id="detectiveTerminal"></div>
+      </div>
+      <h4 id="detectiveQuestion" style="margin: 14px 0 8px 0; color: #fff;"></h4>
+      <div class="option-list" id="detectiveOptions"></div>
+      <div id="detectiveFeedback" style="margin-top: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- Branching Walkthrough Modal -->
+  <div id="branchingModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-cyan);">🌿 BRANCHING & MERGING WORKFLOW</h3>
+        <button class="modal-close" onclick="closeModal('branchingModal')">✕</button>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Follow along with the facilitator's 6-step collaborative demo. Run each command in your local practice terminal!
+      </p>
+      <div id="branchingStepsContainer"></div>
+    </div>
+  </div>
+
+  <!-- Git Quest Modal -->
+  <div id="questModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-green-bright);">⚔️ GIT QUEST: 100-POINT CHALLENGE</h3>
+        <button class="modal-close" onclick="closeModal('questModal')">✕</button>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Evaluate your local practice repository against all 7 official workshop tasks.
+      </p>
+      <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <input type="text" id="questRepoPath" class="form-input" placeholder="Path to your practice Git repo (leave empty for current folder)">
+        <button class="btn-primary" onclick="runQuestVerification()" style="width: auto; white-space: nowrap; margin-top: 0;">INSPECT REPO 🔍</button>
+      </div>
+      <div id="questResultsArea"></div>
+    </div>
+  </div>
+
+  <!-- Final Showdown Modal -->
+  <div id="showdownModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-purple);" id="showdownHeader">⚡ THE FINAL SHOWDOWN</h3>
+        <button class="modal-close" onclick="closeModal('showdownModal')">✕</button>
+      </div>
+      <div id="showdownArea">
+        <h4 id="showdownQuestionText" style="font-size: 1.15rem; margin-bottom: 16px; color: #fff;"></h4>
+        <div class="option-list" id="showdownOptions"></div>
+        <div id="showdownFeedback" style="margin-top: 14px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/game.js"></script>
+</body>
+</html>

@@ -2,7 +2,8 @@
 """
 organizer.py - Facilitator & Presenter Suite for Git Workshop Day 2.
 Designed for the organizer to run on the presenter laptop connected to the projector.
-Includes Projector Slide Modes, Answer Reveals, Quest Code Verifier, and Demo Sandbox Generator.
+Controls stage locks (e.g. unlocking Game 2: Git Detective), displays live leaderboards,
+projects clues & crime scenes, and verifies participant tokens.
 Zero external dependencies (pure Python 3 standard library).
 """
 
@@ -17,19 +18,119 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from engine.ui import (
     Colors, clear_screen, pause, print_banner,
-    print_box, print_terminal_sim, ask_choice, ask_text
+    print_box, print_terminal_sim, ask_choice, ask_text, get_terminal_width
 )
+from engine.state import STAGE_NAMES, STAGE_PASSWORDS, get_leaderboard
 from engine.bingo import load_bingo_items
 from engine.detective import load_detective_cases
-from engine.showdown import load_showdown_questions
 from engine.quest import verify_token
+
+# Track global organizer status
+ORGANIZER_STATUS = {
+    "unlocked": [1], # Stage 1 unlocked by default
+    "current_stage": 1
+}
+
+def unlock_stage_manager():
+    """Organizer stage unlock controller."""
+    clear_screen()
+    print_banner("ORGANIZER STAGE CONTROLLER", "Release stages for 65 participants", badge="STAGE MANAGER", color=Colors.BRIGHT_YELLOW)
+    
+    print("CURRENT STAGE STATUS:")
+    for s in range(1, 6):
+        is_open = s in ORGANIZER_STATUS["unlocked"]
+        status_str = f"{Colors.BRIGHT_GREEN}[UNLOCKED - OPEN]{Colors.RESET}" if is_open else f"{Colors.BRIGHT_RED}[LOCKED]{Colors.RESET}"
+        pwd = STAGE_PASSWORDS.get(s, "N/A")
+        print(f"  Stage {s}: {STAGE_NAMES[s]:<22} {status_str} (Passcode: {Colors.BOLD}{pwd}{Colors.RESET})")
+        
+    print("\nSelect a stage to toggle unlock/lock:")
+    opts = [
+        f"Unlock Stage 2: Git Detective (Passcode: {STAGE_PASSWORDS[2]})",
+        f"Unlock Stage 3: Branching Demo  (Passcode: {STAGE_PASSWORDS[3]})",
+        f"Unlock Stage 4: Git Quest       (Passcode: {STAGE_PASSWORDS[4]})",
+        f"Unlock Stage 5: Final Showdown  (Passcode: {STAGE_PASSWORDS[5]})",
+        "Project Stage Unlock Codes on Screen"
+    ]
+    
+    choice = ask_choice("Action:", opts, allow_quit=True)
+    if choice == -1:
+        return
+    elif choice in (0, 1, 2, 3):
+        stg = choice + 2
+        if stg not in ORGANIZER_STATUS["unlocked"]:
+            ORGANIZER_STATUS["unlocked"].append(stg)
+            print(f"\n{Colors.BRIGHT_GREEN}✔ Stage {stg} ({STAGE_NAMES[stg]}) is now officially UNLOCKED!{Colors.RESET}")
+            print(f"Announce passcode {Colors.BOLD}{STAGE_PASSWORDS[stg]}{Colors.RESET} to the room or project it!\n")
+        else:
+            print(f"\n{Colors.YELLOW}Stage {stg} is already unlocked.{Colors.RESET}\n")
+        pause()
+    elif choice == 4:
+        project_stage_codes()
+
+
+def project_stage_codes():
+    """Project big unlock passcodes on the projector screen for students."""
+    clear_screen()
+    width = get_terminal_width()
+    print_banner("WORKSHOP STAGE UNLOCK PASSCODES", "Announce or project to all participants", badge="PROJECTOR SCREEN", color=Colors.BRIGHT_CYAN)
+    
+    code_text = (
+        f"\n"
+        f"  🎯 Stage 1: Git Bingo       ➔  OPEN BY DEFAULT\n\n"
+        f"  🕵️ Stage 2: Git Detective   ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[2]}{Colors.RESET}\n\n"
+        f"  🌿 Stage 3: Branching Demo  ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[3]}{Colors.RESET}\n\n"
+        f"  ⚔️ Stage 4: Git Quest (100) ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[4]}{Colors.RESET}\n\n"
+        f"  ⚡ Stage 5: Final Showdown  ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[5]}{Colors.RESET}\n"
+    )
+    print_box(code_text, title="ORGANIZER RELEASE KEYS", color=Colors.BRIGHT_YELLOW)
+    print(f"\n{Colors.DIM}Students can type the matching code on their laptops to unlock each round!{Colors.RESET}")
+    pause()
+
+
+def projector_master_leaderboard():
+    """Fullscreen projector leaderboard updating live."""
+    clear_screen()
+    print_banner("GIT WORKSHOP ARENA: OFFICIAL LEADERBOARD", "Projector View for All 65 Students", badge="LIVE RANKINGS", color=Colors.BRIGHT_MAGENTA)
+    
+    entries = get_leaderboard(limit=20)
+    width = min(get_terminal_width(), 84)
+    
+    print(f"{'RANK':<8} {'STUDENT NAME':<28} {'CLASS / BATCH':<20} {'TOTAL SCORE'}")
+    print(f"{'═' * width}")
+    
+    if not entries:
+        print(f"\n  {Colors.DIM}No scores registered yet. As students complete challenges, scores appear here!{Colors.RESET}\n")
+    else:
+        for idx, e in enumerate(entries, 1):
+            if idx == 1:
+                rank_str = "🥇 1ST"
+                color = Colors.BRIGHT_YELLOW + Colors.BOLD
+            elif idx == 2:
+                rank_str = "🥈 2ND"
+                color = Colors.WHITE + Colors.BOLD
+            elif idx == 3:
+                rank_str = "🥉 3RD"
+                color = Colors.YELLOW + Colors.BOLD
+            else:
+                rank_str = f"  #{idx:<4}"
+                color = Colors.WHITE
+                
+            name_str = e.get("name", "Student")[:26]
+            class_str = e.get("class_name", "--")[:18]
+            score_str = f"{e.get('score', 0)} PTS"
+            
+            print(f"{color}{rank_str:<8} {name_str:<28} {class_str:<20} {Colors.BRIGHT_GREEN}{score_str}{Colors.RESET}")
+            
+    print(f"{'═' * width}\n")
+    pause("Press Enter to return to organizer menu...")
+
 
 def projector_bingo():
     """Projector view for 3:30–3:45 Git Bingo."""
     items = load_bingo_items()
     clear_screen()
     print_banner("ORGANIZER PROJECTOR: GIT BINGO ROUND", "Present clues on the big screen & reveal answers", badge="PROJECTOR MODE", color=Colors.BRIGHT_MAGENTA)
-    print("In this mode, project your terminal on the big screen.")
+    print("Project your terminal on the big screen.")
     print("Display each clue, give students 15–30 seconds to pick the command on their laptops,")
     print("then press Enter to reveal the correct command and explanation.\n")
     pause("Press Enter to begin Question 1...")
@@ -39,16 +140,12 @@ def projector_bingo():
         badge = f"CLUE {i} OF {len(items)}"
         print_banner(f"GIT BINGO: QUESTION {i}", "Identify the matching Git command", badge=badge, color=Colors.CYAN)
         
-        # Display Prompt in large prominent box
-        prompt_box = (
-            f"\n  {Colors.BOLD}{Colors.BRIGHT_YELLOW}{item['prompt']}{Colors.RESET}\n"
-        )
+        prompt_box = f"\n  {Colors.BOLD}{Colors.BRIGHT_YELLOW}{item['prompt']}{Colors.RESET}\n"
         print_box(prompt_box, title=f"CLUE #{i}", color=Colors.BRIGHT_YELLOW)
         
         print(f"\n{Colors.DIM}>> Students: Select the matching command on your 3x3 Bingo grid! <<{Colors.RESET}")
         pause("\nPress Enter to REVEAL ANSWER...")
         
-        # Reveal Answer & Explanation
         answer_box = (
             f"COMMAND:      {Colors.BOLD}{Colors.BRIGHT_GREEN}{item['command']}{Colors.RESET}\n\n"
             f"EXPLANATION:  {item['explanation']}"
@@ -68,7 +165,7 @@ def projector_detective():
     clear_screen()
     print_banner("ORGANIZER PROJECTOR: GIT DETECTIVE", "Display crime scenes on screen for room-wide diagnosis", badge="PROJECTOR MODE", color=Colors.YELLOW)
     print("Display terminal outputs on the projector.")
-    print("Give the 65 students 30–60 seconds to analyze the situation,")
+    print("Give the students 30–60 seconds to analyze the situation,")
     print("then press Enter to reveal the diagnosis, correct fix, and developer tip.\n")
     pause("Press Enter to begin Case 1...")
 
@@ -178,11 +275,8 @@ def generate_sandbox_repo():
             return
 
     os.makedirs(target_dir, exist_ok=True)
-    
-    # Initialize repo
     subprocess.run(["git", "init"], cwd=target_dir, check=True)
     
-    # Create sample files
     readme_path = os.path.join(target_dir, "README.md")
     with open(readme_path, "w", encoding="utf-8") as f:
         f.write("# Git Workshop Practice Project\n\nWelcome to Day 2! Use this repository to practice branching, staging, and commits.\n")
@@ -192,30 +286,29 @@ def generate_sandbox_repo():
     
     print(f"\n{Colors.BRIGHT_GREEN}✔ Sandbox repository successfully created at:{Colors.RESET}")
     print(f"{Colors.BOLD}{target_dir}{Colors.RESET}\n")
-    print("Files created:")
-    print("  • README.md (staged and committed on initial branch)")
-    print(f"\nYou can now test 'python game.py quest' or run demo commands inside this directory!\n")
     pause()
 
 
 def organizer_menu():
-    """Main Organizer / Facilitator Dashboard."""
+    """Main Organizer Dashboard."""
     while True:
         clear_screen()
         print_banner(
             "GIT WORKSHOP: ORGANIZER & FACILITATOR DASHBOARD",
-            "Projector Display Controls, Demo Scripts & Student Code Verification",
+            "Controls, Stage Unlocks & Master Projector Views",
             badge="PRESENTER MODE",
             color=Colors.BRIGHT_YELLOW
         )
         
         options = [
+            "🔓 Stage Unlock Controller (Release Stage 2, 3, 4, 5)",
+            "🏆 Projector View: Live Master Leaderboard (All 65 Students)",
+            "🔑 Project Stage Unlock Codes (Big Screen Display)",
             "📽️  Projector View: Git Bingo (Clues & Answer Reveals)",
             "📽️  Projector View: Git Detective (Crime Scenes & Reveals)",
             "📋 Presenter Script: Branching & Merging Demo (4:10–4:40)",
             "🔑 Git Quest Token Verifier (Check Student Codes)",
-            "📦 Generate Practice Sandbox Git Repository",
-            "🔄 Switch to Participant / Student Mode"
+            "📦 Generate Practice Sandbox Git Repository"
         ]
         
         choice = ask_choice("Select an organizer function:", options, allow_quit=True)
@@ -223,18 +316,21 @@ def organizer_menu():
         if choice == -1:
             break
         elif choice == 0:
-            projector_bingo()
+            unlock_stage_manager()
         elif choice == 1:
-            projector_detective()
+            projector_master_leaderboard()
         elif choice == 2:
-            projector_demo_companion()
+            project_stage_codes()
         elif choice == 3:
-            token_verifier_tool()
+            projector_bingo()
         elif choice == 4:
-            generate_sandbox_repo()
+            projector_detective()
         elif choice == 5:
-            import game
-            game.main_menu()
+            projector_demo_companion()
+        elif choice == 6:
+            token_verifier_tool()
+        elif choice == 7:
+            generate_sandbox_repo()
 
 if __name__ == "__main__":
     try:
