@@ -65,18 +65,6 @@ The **Organizer Dashboard** gives you:
 
 ---
 
-## ⏰ Day 2 Schedule & Activity Breakdown
-
-| Time | Session | What Participants Do | Stage Status |
-| :--- | :--- | :--- | :---: |
-| **3:30–3:45** | **Git Bingo (Laptop Edition)** | Match Git concepts to commands on a 3x3 interactive card. Line up 3 in a row for a 50-pt BINGO! | **UNLOCKED** |
-| **3:45–4:10** | **Git Detective** | Inspect real terminal crime scenes. Diagnose failed commits, unstaged files, and pick the right command. | **🔒 LOCKED** *(Organizer opens)* |
-| **4:10–4:40** | **Branching & Merging** | Follow along with the facilitator's live demonstration of branching, committing, pushing, and Pull Requests. | **🔒 LOCKED** *(Organizer opens)* |
-| **4:40–5:10** | **Git Quest (100-Pt Challenge)** | Automated inspection engine that tests your actual local practice repository and grades all 7 tasks. | **🔒 LOCKED** *(Organizer opens)* |
-| **5:10–5:30** | **Final Showdown & Wrap-Up** | 10 rapid-fire questions testing speed, accuracy, and streaks. Generates an end-of-workshop achievement report. | **🔒 LOCKED** *(Organizer opens)* |
-
----
-
 ## 🏆 Git Quest Rubric (100 Points Total)
 
 The automated `Git Quest` checker inspects your local repository non-destructively:
