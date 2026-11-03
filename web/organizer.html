@@ -85,6 +85,25 @@
       border-bottom: 1px solid rgba(255,255,255,0.05);
       font-size: 0.95rem;
     }
+    .btn-reset-leaderboard {
+      padding: 6px 12px;
+      background: rgba(248, 81, 73, 0.12);
+      color: #f85149;
+      border: 1px solid rgba(248, 81, 73, 0.4);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-reset-leaderboard:hover {
+      background: #f85149;
+      color: #fff;
+      border-color: #f85149;
+    }
   </style>
 </head>
 <body>
@@ -213,11 +232,16 @@
 
       <!-- Right Column: Projector Master Leaderboard -->
       <section class="control-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h2 style="font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h2 style="font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px; margin: 0;">
             <span class="live-indicator"></span> 🏆 PROJECTOR MASTER LEADERBOARD
           </h2>
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Auto-refreshes every 2s</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="btn-reset-leaderboard" onclick="confirmResetLeaderboard()" title="Clear scores and start fresh">
+              <span>🗑️</span> Reset Leaderboard
+            </button>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Auto-refreshes every 2s</span>
+          </div>
         </div>
 
         <table class="big-table">
@@ -346,6 +370,33 @@
         }
       } catch (e) {
         alert('Failed to toggle stage.');
+      }
+    }
+
+    async function confirmResetLeaderboard() {
+      const confirmed = confirm(
+        "⚠️ RESET WORKSHOP LEADERBOARD?\n\n" +
+        "This will clear all participant scores, completion times, and first-finisher speed bonuses.\n\n" +
+        "Are you sure you want to proceed?"
+      );
+      if (!confirmed) return;
+
+      const storedKey = sessionStorage.getItem('admin_key') || 'FOSSMEC2026';
+      try {
+        const res = await fetch('/api/organizer/reset-leaderboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ admin_key: storedKey })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("✔ Leaderboard and speed bonus records have been reset.");
+          await refreshData();
+        } else {
+          alert("Failed to reset leaderboard: " + (data.message || "Unauthorized"));
+        }
+      } catch (err) {
+        alert("Network error: Could not reach server to reset leaderboard.");
       }
     }
 

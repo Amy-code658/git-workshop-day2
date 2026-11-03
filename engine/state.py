@@ -350,3 +350,18 @@ def update_local_leaderboard(name, class_name, score, total_time=0.0, stage_scor
             json.dump(entries, f, indent=2)
     except Exception:
         pass
+
+
+def reset_leaderboard(clear_first_finishers=True):
+    """Clear leaderboard data and optionally reset first finisher records."""
+    try:
+        with open(LEADERBOARD_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f, indent=2)
+            
+        if clear_first_finishers:
+            with open(FIRST_FINISHERS_FILE, "w", encoding="utf-8") as f:
+                json.dump({}, f, indent=2)
+        return True
+    except Exception:
+        return False
+

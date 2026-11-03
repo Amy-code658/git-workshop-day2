@@ -20,7 +20,7 @@ from engine.state import (
     PlayerState, get_leaderboard, STAGE_PASSWORDS,
     format_seconds, get_first_finishers, get_workshop_status,
     set_workshop_status, update_local_leaderboard, check_and_award_first_finisher,
-    get_lan_ip
+    reset_leaderboard, get_lan_ip
 )
 from engine.quest import GitQuestValidator, generate_verification_token
 
@@ -273,6 +273,17 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": True, "message": "Organizer authenticated."})
             else:
                 self.send_json({"success": False, "message": "Incorrect organizer master passcode."}, status=401)
+            return
+
+        # 6. Organizer Reset Leaderboard & Speed Bonus Claims
+        elif path == "/api/organizer/reset-leaderboard":
+            admin_pwd = body.get("admin_key", "").strip()
+            if admin_pwd != ORGANIZER_MASTER_KEY:
+                self.send_json({"success": False, "message": "Unauthorized organizer passcode."}, status=403)
+                return
+
+            reset_leaderboard(clear_first_finishers=True)
+            self.send_json({"success": True, "message": "Leaderboard and speed bonuses have been reset."})
             return
 
         # 6. Web Git Quest Verification (supports both local path and online GitHub proof)

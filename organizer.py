@@ -23,7 +23,7 @@ from engine.ui import (
 from engine.state import (
     STAGE_NAMES, STAGE_PASSWORDS, get_leaderboard, format_seconds,
     get_first_finishers, get_workshop_status, set_workshop_status,
-    get_lan_ip
+    reset_leaderboard, get_lan_ip
 )
 from engine.server import start_hub_server
 from engine.bingo import load_bingo_items
@@ -369,6 +369,21 @@ def public_web_sharing_guide():
         pause()
 
 
+def organizer_reset_leaderboard():
+    """Reset room leaderboard and speed bonuses."""
+    clear_screen()
+    print_banner("RESET LEADERBOARD & SPEED BONUSES", "Wipe scores and start a fresh tournament round", badge="DANGER ZONE", color=Colors.BRIGHT_RED)
+    
+    print(f"\n{Colors.BRIGHT_RED}{Colors.BOLD}WARNING:{Colors.RESET} This will wipe all participant scores, completion times, and first-finisher bonus claims.\n")
+    confirm = ask_text("Type 'RESET' to confirm or press Enter to cancel")
+    if confirm.strip() == "RESET":
+        reset_leaderboard(clear_first_finishers=True)
+        print(f"\n{Colors.BRIGHT_GREEN}✔ Leaderboard and bonus records successfully cleared!{Colors.RESET}\n")
+    else:
+        print(f"\n{Colors.YELLOW}Operation cancelled.{Colors.RESET}\n")
+    pause()
+
+
 def organizer_menu():
     """Main Organizer Dashboard."""
     ensure_hub_running()
@@ -392,7 +407,8 @@ def organizer_menu():
             "📽️  Projector View: Git Detective (Crime Scenes & Reveals)",
             "📋 Presenter Script: Branching & Merging Demo (4:10–4:40)",
             "🔑 Git Quest Token Verifier (Check Student Codes)",
-            "📦 Generate Practice Sandbox Git Repository"
+            "📦 Generate Practice Sandbox Git Repository",
+            "🗑️  Reset Room Leaderboard & Speed Bonuses"
         ]
         
         choice = ask_choice("Select an organizer function:", options, allow_quit=True)
@@ -417,6 +433,8 @@ def organizer_menu():
             token_verifier_tool()
         elif choice == 8:
             generate_sandbox_repo()
+        elif choice == 9:
+            organizer_reset_leaderboard()
 
 if __name__ == "__main__":
     if "--server-only" in sys.argv:
