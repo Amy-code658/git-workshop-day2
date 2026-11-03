@@ -281,9 +281,13 @@
       <p style="color: var(--text-muted); margin-bottom: 16px;">
         Evaluate your local practice repository against all 7 official workshop tasks.
       </p>
-      <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-        <input type="text" id="questRepoPath" class="form-input" placeholder="Path to your practice Git repo (leave empty for current folder)">
-        <button class="btn-primary" onclick="runQuestVerification()" style="width: auto; white-space: nowrap; margin-top: 0;">INSPECT REPO 🔍</button>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+        <label style="font-size: 0.85rem; color: var(--accent-cyan); font-weight: bold;">SUBMIT YOUR GITHUB REPO OR PULL REQUEST LINK:</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="questGithubUrl" class="form-input" placeholder="e.g. https://github.com/username/my-practice-repo">
+          <button class="btn-primary" onclick="runQuestVerification()" style="width: auto; white-space: nowrap; margin-top: 0;">VERIFY & SCORE 🔍</button>
+        </div>
+        <small style="color: var(--text-muted);">Or enter local laptop folder path if playing locally: <input type="text" id="questRepoPath" class="form-input" placeholder="Path to local folder" style="padding: 4px 8px; font-size: 0.8rem; width: 220px; display: inline-block;"></small>
       </div>
       <div id="questResultsArea"></div>
     </div>

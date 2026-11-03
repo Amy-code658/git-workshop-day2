@@ -617,11 +617,17 @@ function openQuest() {
 }
 
 async function runQuestVerification() {
-  const repoPath = document.getElementById('questRepoPath').value.trim();
+  const repoPath = document.getElementById('questRepoPath') ? document.getElementById('questRepoPath').value.trim() : '';
+  const githubUrl = document.getElementById('questGithubUrl') ? document.getElementById('questGithubUrl').value.trim() : '';
   const resArea = document.getElementById('questResultsArea');
-  const elapsed = stopRoundTimer();
   
-  resArea.innerHTML = '<p style="color:var(--accent-yellow);">🔍 Inspecting local Git repository...</p>';
+  if (!repoPath && !githubUrl) {
+    alert("Please provide either your GitHub repo/PR link (or local repo folder path) to inspect!");
+    return;
+  }
+
+  const elapsed = stopRoundTimer();
+  resArea.innerHTML = '<p style="color:var(--accent-yellow);">🔍 Inspecting Git repository & verifying workshop challenges...</p>';
 
   try {
     const res = await fetch('/api/quest/verify', {
@@ -629,6 +635,7 @@ async function runQuestVerification() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         repo_path: repoPath,
+        github_url: githubUrl,
         name: currentProfile.name,
         time_taken: elapsed
       })

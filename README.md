@@ -2,70 +2,87 @@
 
 An interactive, live-networked tournament and learning suite built specifically for **Day 2 of the Git Workshop at Govt. Model Engineering College (FOSS MEC)**.
 
-Runs seamlessly across **~65 participant laptops** and the **workshop organizer's projector laptop** with **pure Python 3 standard library** (zero `pip install`, zero external dependencies).
+Runs seamlessly as a **Public Website** or **Local Network Hub** for **~65 participant laptops/phones** and the **workshop organizer's projector** with **pure Python 3 standard library** (zero `pip install`, zero external dependencies).
 
 ---
 
 ## ⚡ What's New in this Version
 
-* 🌐 **Live Room-Wide Leaderboard Sync**: The organizer's laptop runs the Central Workshop Hub. When any student registers or scores points, their name, class, score, and completion time update live on every screen in the room!
-* 🔓 **Instant Stage Unlocking**: The organizer unlocks Stage 2 (*Git Detective*) with one click; all connected participant laptops immediately unlock Stage 2 in real time (polling every 2 seconds with audio chime).
-* 🔰 **FOSS MEC Logo & Branding**: Official FOSS MEC emblem integrated into the top HUD, welcome screen, and projector display.
-* 📚 **35+ Fact-Checked Questions with Variety**: Deep coverage of **branching, merging, merge conflicts (`<<<<<<< HEAD`), Pull Requests, undoing (`git restore`, `git stash`), and remotes**.
+* 🌐 **Public Website Access (No Common Wi-Fi Needed)**: Participants can join from anywhere using their personal mobile data (4G/5G) or college network! Deploy free in 1 click to Render/Railway, or launch a zero-signup tunnel from your laptop.
+* 🖥️ **Web-Based Organizer Console (`/organizer.html`)**: Manage the entire workshop from your browser with passcode protection (`FOSSMEC2026`). Unlock stages, track first-finishers, and project a fullscreen live leaderboard.
+* 🔓 **Instant Stage Unlocking**: When the organizer unlocks Stage 2 (*Git Detective*), all connected participant screens unlock within 2 seconds with an audio chime!
+* 🔰 **FOSS MEC Logo & Branding**: Official FOSS MEC emblem integrated into the HUD, welcome screen, and projector display.
+* 📚 **35+ Fact-Checked Questions with Variety**: Deep coverage of **branching, fast-forward vs 3-way merging, merge conflicts (`<<<<<<< HEAD`), Pull Requests, undoing (`git restore`, `git stash`), and remotes**.
 * 🎲 **Participant Question Randomization**: Each student receives a unique, randomized subset of questions and detective cases to prevent screen peeking and ensure comprehensive learning.
 * ⏱️ **Timer & First-Finisher Bonus (+100 Pts)**: Each game tracks completion time. The first student across the room to finish any stage wins an extra +100 Speed Demon Bonus!
 * 🎯 **Authentic Stop-on-Bingo**: Unique 3x3 cards per player. The moment a student gets 3 in a row, column, or diagonal, their Bingo round concludes immediately!
 
 ---
 
-## 🚀 Workshop Setup & Running Guide
+## 🚀 How to Run as a Public Website (No Common Wi-Fi Needed)
 
-### 1. For You (The Organizer) — On the Projector Laptop
+Because venue Wi-Fi may be unavailable or segregated, here are the two easiest ways to host the workshop so all participants can join seamlessly from their mobile data:
 
-Connect your laptop to the venue Wi-Fi / Hotspot and projector, open your terminal, and run:
+### Method 1: Free 1-Click Cloud Deployment (Render.com) — *Recommended*
 
-```bash
-python3 organizer.py
-```
+Deploy once to Render (100% free, no credit card required for standard tier):
 
-The terminal will display:
+1. **Push this repo to your GitHub account**:
+   ```bash
+   git push origin main
+   ```
+2. Go to **[Render.com](https://render.com)**, sign in with GitHub, and click **New +** → **Web Service**.
+3. Select your `git-workshop-day2` repository.
+4. Fill in the basic settings (Render detects Python automatically):
+   * **Runtime**: `Python 3`
+   * **Build Command**: `echo "Workshop ready"` (or leave blank)
+   * **Start Command**: `python3 organizer.py --server-only`
+5. Click **Create Web Service**.
+
+Render will deploy your site and provide a permanent public link like:
 ```text
-╔════════════════════════════════════════════════════════════════════════════════╗
-║                  🌐 FOSS MEC WORKSHOP HUB ACTIVE                              ║
-║  Projector URL:   http://localhost:5000                                        ║
-║  Student URL:     http://192.168.1.44:5000 (Open on any laptop / phone)       ║
-╚════════════════════════════════════════════════════════════════════════════════╝
+https://foss-mec-git-workshop.onrender.com
 ```
 
-* **Projector View**: Open `http://localhost:5000` in your browser (or select `[1]` in the terminal menu) to project the **Live Master Leaderboard** onto the big screen.
-* **Stage Controller**: Select `[0] Stage Unlock Controller` in `organizer.py` whenever you are ready to open Stage 2, 3, 4, or 5.
+* **Students open**: `https://foss-mec-git-workshop.onrender.com` (from any phone or laptop data connection).
+* **Organizer opens**: `https://foss-mec-git-workshop.onrender.com/organizer.html` (Passcode: `FOSSMEC2026`) to unlock stages and project the live master leaderboard!
 
 ---
 
-### 2. For Participants (~65 Students)
+### Method 2: Instant Public Tunnel from Organizer Laptop (Zero Sign-up)
 
-Students can join in **either of two ways**:
+If you prefer to run the server directly on your laptop using mobile hotspot:
 
-#### Option A: Direct Browser (Easiest — No Setup Needed!)
-Students connect to the same Wi-Fi / hotspot and simply open the URL shown on your projector:
-```text
-http://<ORGANIZER_IP>:5000
-```
-*(Example: `http://192.168.1.44:5000`)*. They can play immediately from Chrome, Firefox, Safari, or Edge!
+1. Start the hub in your terminal:
+   ```bash
+   python3 organizer.py
+   ```
+2. Open a second terminal window and run:
+   ```bash
+   ssh -R 80:localhost:5000 nokey@localhost.run
+   ```
+3. Terminal will output a public HTTPS URL (e.g. `https://random-subdomain.lhr.life`).
+4. Share that link with participants via projector or WhatsApp/Discord!
 
-#### Option B: Terminal / Local Clone
-If they cloned the repository on their laptop:
-* **macOS / Linux**:
-  ```bash
-  ./play.sh
-  # or to specify the hub:
-  python3 game.py --connect http://<ORGANIZER_IP>:5000
-  ```
-* **Windows**:
-  ```cmd
-  play.bat
-  ```
-*(The script automatically scans the local network via UDP beacon to discover your organizer hub without typing!).*
+---
+
+### Method 3: Local Wi-Fi / Hotspot Mode (If Shared Network is Available)
+
+If you connect all laptops to a common phone hotspot or venue Wi-Fi:
+
+1. Run on the organizer laptop:
+   ```bash
+   python3 organizer.py
+   ```
+2. The terminal will display your LAN IP:
+   ```text
+   ╔════════════════════════════════════════════════════════════════════════════════╗
+   ║                  🌐 FOSS MEC WORKSHOP HUB ACTIVE                              ║
+   ║  Projector URL:   http://localhost:5000                                        ║
+   ║  Student URL:     http://192.168.1.44:5000 (Open on any laptop / phone)       ║
+   ╚════════════════════════════════════════════════════════════════════════════════╝
+   ```
+3. Students open `http://<YOUR_IP>:5000` in their browsers.
 
 ---
 

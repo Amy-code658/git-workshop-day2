@@ -333,6 +333,42 @@ def generate_sandbox_repo():
     pause()
 
 
+def public_web_sharing_guide():
+    """Instructions and instant public tunnel helper for when participants lack common Wi-Fi."""
+    clear_screen()
+    print_banner("PUBLIC WEBSITE SHARING GUIDE", "No common Wi-Fi needed — participants connect over mobile data", badge="CLOUD / TUNNEL", color=Colors.BRIGHT_CYAN)
+    
+    guide_text = (
+        f"{Colors.BOLD}OPTION 1: Free Cloud Hosting (Recommended for Big Workshops){Colors.RESET}\n"
+        f"  Deploy this repository directly to Render (https://render.com) or Railway:\n"
+        f"  1. Push this repo to your GitHub.\n"
+        f"  2. On Render.com, click 'New Web Service' -> Connect your repo.\n"
+        f"  3. Set Start Command: {Colors.BRIGHT_GREEN}python3 organizer.py --server-only{Colors.RESET}\n"
+        f"  4. Done! Render provides a public URL: {Colors.BRIGHT_YELLOW}https://<your-project>.onrender.com{Colors.RESET}\n"
+        f"     • Students open: {Colors.BRIGHT_YELLOW}https://<your-project>.onrender.com{Colors.RESET}\n"
+        f"     • Organizer opens: {Colors.BRIGHT_CYAN}https://<your-project>.onrender.com/organizer.html{Colors.RESET}\n\n"
+        f"{Colors.BOLD}OPTION 2: Instant Public Tunnel from your Laptop (Zero Sign-up){Colors.RESET}\n"
+        f"  Run this single command in a new terminal tab while this hub is running:\n"
+        f"  {Colors.BRIGHT_GREEN}ssh -R 80:localhost:{HUB_PORT} nokey@localhost.run{Colors.RESET}\n"
+        f"  It will generate a live public HTTPS address (e.g. https://xyz.lhr.life) that anyone\n"
+        f"  can open from their phone or laptop data connection!\n"
+    )
+    print_box(guide_text, title="HOSTING WITHOUT LOCAL WI-FI", color=Colors.BRIGHT_YELLOW)
+    
+    opts = [
+        "Test / Launch instant SSH tunnel now (localhost.run)",
+        "Back to Main Menu"
+    ]
+    c = ask_choice("Action:", opts)
+    if c == 0:
+        print(f"\n{Colors.BRIGHT_YELLOW}Starting public SSH tunnel on port {HUB_PORT}... Press Ctrl+C to stop tunnel.{Colors.RESET}\n")
+        try:
+            subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", "-R", f"80:localhost:{HUB_PORT}", "nokey@localhost.run"])
+        except Exception as e:
+            print(f"Could not start tunnel: {e}")
+        pause()
+
+
 def organizer_menu():
     """Main Organizer Dashboard."""
     ensure_hub_running()
@@ -351,6 +387,7 @@ def organizer_menu():
             "🔓 Stage Unlock Controller (Release Stage 2, 3, 4, 5 live to all laptops)",
             "🏆 Projector View: Live Room Leaderboard (Scores & Times)",
             "🔑 Project Stage Unlock Codes (Big Screen Display)",
+            "🌐 Public Website Tunnel (Share via Mobile Data / No Common Wi-Fi)",
             "📽️  Projector View: Git Bingo (Clues & Answer Reveals)",
             "📽️  Projector View: Git Detective (Crime Scenes & Reveals)",
             "📋 Presenter Script: Branching & Merging Demo (4:10–4:40)",
@@ -369,17 +406,30 @@ def organizer_menu():
         elif choice == 2:
             project_stage_codes()
         elif choice == 3:
-            projector_bingo()
+            public_web_sharing_guide()
         elif choice == 4:
-            projector_detective()
+            projector_bingo()
         elif choice == 5:
-            projector_demo_companion()
+            projector_detective()
         elif choice == 6:
-            token_verifier_tool()
+            projector_demo_companion()
         elif choice == 7:
+            token_verifier_tool()
+        elif choice == 8:
             generate_sandbox_repo()
 
 if __name__ == "__main__":
+    if "--server-only" in sys.argv:
+        port = int(os.environ.get("PORT", 5000))
+        server, actual_port = start_hub_server(port=port, start_beacon=False)
+        print(f"🚀 FOSS MEC Workshop Central Hub running on http://0.0.0.0:{actual_port}")
+        try:
+            server.serve_forever()
+        except (KeyboardInterrupt, SystemExit):
+            print("\nShutting down server.")
+            server.server_close()
+        sys.exit(0)
+
     try:
         organizer_menu()
     except (KeyboardInterrupt, EOFError):

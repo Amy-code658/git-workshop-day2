@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: foss-mec-git-workshop
+    runtime: python
+    buildCommand: echo "Workshop ready"
+    startCommand: python3 organizer.py --server-only
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: ORGANIZER_KEY
+        value: "FOSSMEC2026"

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FOSS MEC — Organizer Dashboard & Stage Controller</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
+  <style>
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .admin-grid { grid-template-columns: 1fr; }
+    }
+    .control-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--card-radius);
+      padding: 20px;
+    }
+    .stage-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .stage-row.is-open {
+      border-left: 6px solid var(--accent-green-bright);
+    }
+    .stage-row.is-locked {
+      border-left: 6px solid #484f58;
+    }
+    .btn-toggle-unlock {
+      padding: 8px 16px;
+      background: var(--accent-green);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-toggle-unlock:hover { background: var(--accent-green-bright); }
+    .btn-toggle-lock {
+      padding: 8px 16px;
+      background: #30363d;
+      color: #f85149;
+      border: 1px solid #f85149;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .btn-toggle-lock:hover { background: rgba(248,81,73,0.15); }
+    .passcode-badge {
+      font-family: monospace;
+      background: rgba(241, 224, 90, 0.15);
+      color: var(--accent-yellow);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      border: 1px solid var(--accent-yellow);
+    }
+    .big-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .big-table th {
+      text-align: left;
+      color: var(--text-muted);
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .big-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <!-- Admin Passcode Overlay -->
+  <div id="adminAuthOverlay" class="welcome-overlay">
+    <div class="welcome-card" style="max-width: 420px;">
+      <img src="/logo.jpg" alt="FOSS MEC" class="welcome-foss-logo">
+      <h1>ORGANIZER PORTAL</h1>
+      <div class="sub">STAGE CONTROLLER & MASTER SCREEN</div>
+      <p>Enter the organizer access passcode to control the workshop:</p>
+      
+      <form id="adminLoginForm">
+        <div class="form-group">
+          <label for="adminKey">Organizer Passcode</label>
+          <input type="password" id="adminKey" class="form-input" placeholder="Default: FOSSMEC2026" required style="text-align: center; font-size: 1.1rem; letter-spacing: 2px;">
+        </div>
+        <button type="submit" class="btn-primary">ACCESS CONTROLLER 🔓</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Top Bar -->
+  <header class="hud-bar">
+    <div class="hud-title">
+      <img src="/logo.jpg" alt="FOSS MEC" class="foss-logo">
+      <span>FOSS MEC — ORGANIZER CONSOLE</span>
+      <span class="tag" style="background:#238636; color:#fff;">MASTER MODE</span>
+    </div>
+    <div class="hud-stats">
+      <div class="stat-pill">
+        <span>👥 Active Students:</span>
+        <span id="statStudentCount" class="stat-value">0</span>
+      </div>
+      <button class="btn-play" onclick="toggleFullscreen()" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); font-size: 0.85rem;">
+        ⛶ Fullscreen Projector
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+    <div class="admin-grid">
+
+      <!-- Left Column: Stage Unlock Controls -->
+      <section class="control-card">
+        <h2 style="font-size: 1.2rem; margin-bottom: 16px; color: var(--accent-yellow); display: flex; align-items: center; gap: 8px;">
+          <span>🔓</span> LIVE STAGE ACCESS CONTROLLER
+        </h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+          Unlocking a stage here <strong>immediately broadcasts to all participant laptops across the room</strong> within 2 seconds!
+        </p>
+
+        <!-- Stage 1 -->
+        <div class="stage-row is-open" id="rowStage1">
+          <div>
+            <h4 style="color: #fff; font-size: 1.05rem;">Stage 1: Git Bingo</h4>
+            <small style="color: var(--accent-green-bright);">● OPEN BY DEFAULT</small>
+          </div>
+          <div>
+            <span class="passcode-badge">NO CODE NEEDED</span>
+          </div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="stage-row is-locked" id="rowStage2">
+          <div>
+            <h4 style="color: #fff; font-size: 1.05rem;">Stage 2: Git Detective</h4>
+            <small id="statusStage2" style="color: var(--accent-yellow);">🔒 LOCKED</small>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Code: <span class="passcode-badge">DETECTIVE26</span></div>
+          </div>
+          <div id="btnContainerStage2">
+            <button class="btn-toggle-unlock" onclick="toggleStage(2, 'unlock')">UNLOCK STAGE 2 🔓</button>
+          </div>
+        </div>
+
+        <!-- Stage 3 -->
+        <div class="stage-row is-locked" id="rowStage3">
+          <div>
+            <h4 style="color: #fff; font-size: 1.05rem;">Stage 3: Branching Demo</h4>
+            <small id="statusStage3" style="color: var(--accent-yellow);">🔒 LOCKED</small>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Code: <span class="passcode-badge">BRANCH26</span></div>
+          </div>
+          <div id="btnContainerStage3">
+            <button class="btn-toggle-unlock" onclick="toggleStage(3, 'unlock')">UNLOCK STAGE 3 🔓</button>
+          </div>
+        </div>
+
+        <!-- Stage 4 -->
+        <div class="stage-row is-locked" id="rowStage4">
+          <div>
+            <h4 style="color: #fff; font-size: 1.05rem;">Stage 4: Git Quest (100 Pts)</h4>
+            <small id="statusStage4" style="color: var(--accent-yellow);">🔒 LOCKED</small>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Code: <span class="passcode-badge">QUEST26</span></div>
+          </div>
+          <div id="btnContainerStage4">
+            <button class="btn-toggle-unlock" onclick="toggleStage(4, 'unlock')">UNLOCK STAGE 4 🔓</button>
+          </div>
+        </div>
+
+        <!-- Stage 5 -->
+        <div class="stage-row is-locked" id="rowStage5">
+          <div>
+            <h4 style="color: #fff; font-size: 1.05rem;">Stage 5: Final Showdown</h4>
+            <small id="statusStage5" style="color: var(--accent-yellow);">🔒 LOCKED</small>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Code: <span class="passcode-badge">SHOWDOWN26</span></div>
+          </div>
+          <div id="btnContainerStage5">
+            <button class="btn-toggle-unlock" onclick="toggleStage(5, 'unlock')">UNLOCK STAGE 5 🔓</button>
+          </div>
+        </div>
+
+        <!-- First Finishers Speed Bonus Info -->
+        <div style="margin-top: 24px; padding: 14px; background: rgba(188,140,255,0.1); border: 1px solid var(--accent-purple); border-radius: 8px;">
+          <h4 style="color: var(--accent-purple); margin-bottom: 8px;">⚡ FIRST FINISHER SPEED WINNERS (+100 PTS)</h4>
+          <ul id="firstFinishersList" style="list-style: none; font-size: 0.85rem; color: #fff; display: flex; flex-direction: column; gap: 4px;">
+            <li>Stage 1 (Bingo): <em>Waiting for first winner...</em></li>
+            <li>Stage 2 (Detective): <em>Waiting...</em></li>
+            <li>Stage 3 (Branching): <em>Waiting...</em></li>
+            <li>Stage 4 (Quest): <em>Waiting...</em></li>
+            <li>Stage 5 (Showdown): <em>Waiting...</em></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Right Column: Projector Master Leaderboard -->
+      <section class="control-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 style="font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span class="live-indicator"></span> 🏆 PROJECTOR MASTER LEADERBOARD
+          </h2>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Auto-refreshes every 2s</span>
+        </div>
+
+        <table class="big-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">RANK</th>
+              <th>PARTICIPANT</th>
+              <th>CLASS</th>
+              <th>SCORE</th>
+              <th>TIME</th>
+            </tr>
+          </thead>
+          <tbody id="masterLeaderboardBody">
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                Waiting for participants to join...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    let adminToken = sessionStorage.getItem('admin_auth_token') || '';
+    let currentUnlocked = [1];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (adminToken === 'authorized') {
+        document.getElementById('adminAuthOverlay').style.display = 'none';
+        initPolling();
+      } else {
+        document.getElementById('adminAuthOverlay').style.display = 'flex';
+      }
+
+      document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pwd = document.getElementById('adminKey').value.trim();
+        try {
+          const res = await fetch('/api/organizer/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_key: pwd })
+          });
+          const data = await res.json();
+          if (data.success) {
+            adminToken = 'authorized';
+            sessionStorage.setItem('admin_auth_token', 'authorized');
+            sessionStorage.setItem('admin_key', pwd);
+            document.getElementById('adminAuthOverlay').style.display = 'none';
+            initPolling();
+          } else {
+            alert('Incorrect Passcode.');
+          }
+        } catch (err) {
+          alert('Error connecting to server.');
+        }
+      });
+    });
+
+    function initPolling() {
+      refreshData();
+      setInterval(refreshData, 2000);
+    }
+
+    async function refreshData() {
+      // 1. Status
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        currentUnlocked = data.unlocked || [1];
+        updateStageCards(currentUnlocked);
+        updateFirstFinishers(data.first_finishers || {});
+      } catch (e) {}
+
+      // 2. Leaderboard
+      try {
+        const res = await fetch('/api/leaderboard');
+        const list = await res.json();
+        renderMasterLeaderboard(list);
+        document.getElementById('statStudentCount').textContent = list.length;
+      } catch (e) {}
+    }
+
+    function updateStageCards(unlocked) {
+      for (let s = 2; s <= 5; s++) {
+        const row = document.getElementById(`rowStage${s}`);
+        const statusEl = document.getElementById(`statusStage${s}`);
+        const btnBox = document.getElementById(`btnContainerStage${s}`);
+        if (!row) continue;
+
+        const isOpen = unlocked.includes(s);
+        if (isOpen) {
+          row.classList.remove('is-locked');
+          row.classList.add('is-open');
+          statusEl.style.color = '#39d353';
+          statusEl.textContent = '● UNLOCKED (LIVE FOR STUDENTS)';
+          btnBox.innerHTML = `<button class="btn-toggle-lock" onclick="toggleStage(${s}, 'lock')">LOCK STAGE ${s}</button>`;
+        } else {
+          row.classList.remove('is-open');
+          row.classList.add('is-locked');
+          statusEl.style.color = '#f1e05a';
+          statusEl.textContent = '🔒 LOCKED (WAITING FOR YOU)';
+          btnBox.innerHTML = `<button class="btn-toggle-unlock" onclick="toggleStage(${s}, 'unlock')">UNLOCK STAGE ${s} 🔓</button>`;
+        }
+      }
+    }
+
+    async function toggleStage(stageNum, action) {
+      try {
+        const storedKey = sessionStorage.getItem('admin_key') || 'FOSSMEC2026';
+        const res = await fetch('/api/organizer/toggle-stage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stage: stageNum,
+            action: action,
+            admin_key: storedKey
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateStageCards(data.unlocked);
+        }
+      } catch (e) {
+        alert('Failed to toggle stage.');
+      }
+    }
+
+    function updateFirstFinishers(ff) {
+      const listEl = document.getElementById('firstFinishersList');
+      const names = ['Git Bingo', 'Git Detective', 'Branching Demo', 'Git Quest', 'Final Showdown'];
+      let html = '';
+      for (let s = 1; s <= 5; s++) {
+        const winner = ff[String(s)];
+        if (winner) {
+          html += `<li><strong>Stage ${s} (${names[s-1]}):</strong> <span style="color:#39d353; font-weight:bold;">⚡ ${escapeHtml(winner)} (+100 pts)</span></li>`;
+        } else {
+          html += `<li><strong>Stage ${s} (${names[s-1]}):</strong> <span style="color:#8b949e;">Unclaimed (+100 pts bonus)</span></li>`;
+        }
+      }
+      listEl.innerHTML = html;
+    }
+
+    function renderMasterLeaderboard(list) {
+      const tbody = document.getElementById('masterLeaderboardBody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">Waiting for participants to join...</td></tr>';
+        return;
+      }
+
+      let html = '';
+      list.forEach((p, idx) => {
+        let rankBadge = `#${idx + 1}`;
+        let rowStyle = '';
+        if (idx === 0) { rankBadge = '🥇 1ST'; rowStyle = 'color: #f1e05a; font-weight: bold;'; }
+        else if (idx === 1) { rankBadge = '🥈 2ND'; rowStyle = 'color: #fff; font-weight: bold;'; }
+        else if (idx === 2) { rankBadge = '🥉 3RD'; rowStyle = 'color: #f1e05a;'; }
+
+        html += `
+          <tr style="${rowStyle}">
+            <td style="font-weight: 800;">${rankBadge}</td>
+            <td style="font-weight: 600;">${escapeHtml(p.name)}</td>
+            <td style="color: var(--text-muted);">${escapeHtml(p.class_name)}</td>
+            <td style="color: #39d353; font-weight: 800;">${p.score} PTS</td>
+            <td style="color: #00f0ff;">⏱️ ${p.formatted_time || '00:00'}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>

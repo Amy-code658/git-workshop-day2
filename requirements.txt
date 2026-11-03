@@ -1,0 +1,2 @@
+# FOSS MEC Git Workshop - Zero external dependencies required!
+# Pure Python standard library (http.server, socketserver, urllib, json).
