@@ -2,8 +2,6 @@
 
 An interactive, live-networked tournament and learning suite built specifically for **Day 2 of the Git Workshop at Govt. Model Engineering College (FOSS MEC)**.
 
-Runs seamlessly as a **Public Website** or **Local Network Hub** for **~65 participant laptops/phones** and the **workshop organizer's projector** with **pure Python 3 standard library** (zero `pip install`, zero external dependencies).
-
 ---
 
 ## ⚡ What's New in this Version
@@ -11,17 +9,10 @@ Runs seamlessly as a **Public Website** or **Local Network Hub** for **~65 parti
 * 🌐 **Public Website Access (No Common Wi-Fi Needed)**: Participants can join from anywhere using their personal mobile data (4G/5G) or college network! Deploy free in 1 click to Render/Railway, or launch a zero-signup tunnel from your laptop.
 * 🖥️ **Web-Based Organizer Console (`/organizer.html`)**: Manage the entire workshop from your browser with passcode protection (`FOSSMEC2026`). Unlock stages, track first-finishers, and project a fullscreen live leaderboard.
 * 🔓 **Instant Stage Unlocking**: When the organizer unlocks Stage 2 (*Git Detective*), all connected participant screens unlock within 2 seconds with an audio chime!
-* 🔰 **FOSS MEC Logo & Branding**: Official FOSS MEC emblem integrated into the HUD, welcome screen, and projector display.
-* 📚 **35+ Fact-Checked Questions with Variety**: Deep coverage of **branching, fast-forward vs 3-way merging, merge conflicts (`<<<<<<< HEAD`), Pull Requests, undoing (`git restore`, `git stash`), and remotes**.
-* 🎲 **Participant Question Randomization**: Each student receives a unique, randomized subset of questions and detective cases to prevent screen peeking and ensure comprehensive learning.
-* ⏱️ **Timer & First-Finisher Bonus (+100 Pts)**: Each game tracks completion time. The first student across the room to finish any stage wins an extra +100 Speed Demon Bonus!
-* 🎯 **Authentic Stop-on-Bingo**: Unique 3x3 cards per player. The moment a student gets 3 in a row, column, or diagonal, their Bingo round concludes immediately!
-
 ---
 
 ## 🚀 How to Run as a Public Website (No Common Wi-Fi Needed)
 
-Because venue Wi-Fi may be unavailable or segregated, here are the two easiest ways to host the workshop so all participants can join seamlessly from their mobile data:
 
 ### Method 1: Free 1-Click Cloud Deployment (Render.com) — *Recommended*
 
@@ -85,16 +76,6 @@ If you connect all laptops to a common phone hotspot or venue Wi-Fi:
 3. Students open `http://<YOUR_IP>:5000` in their browsers.
 
 ---
-
-## ⏰ Day 2 Schedule & Activity Breakdown
-
-| Time | Session | What Participants Do | Stage Status |
-| :--- | :--- | :--- | :---: |
-| **3:30–3:45** | **Git Bingo (Laptop Edition)** | Match concepts on a randomized 3x3 card. **First line wins immediately!** | **UNLOCKED** |
-| **3:45–4:10** | **Git Detective** | Diagnose real terminal scenes (merge conflicts, detached HEAD, unstaged files). | **🔒 LOCKED** *(Organizer unlocks)* |
-| **4:10–4:40** | **Branching & Merging** | Follow along with the facilitator's live demonstration of branching, committing, pushing, and Pull Requests. | **🔒 LOCKED** *(Organizer unlocks)* |
-| **4:40–5:10** | **Git Quest (100-Pt Challenge)** | Automated inspection engine that tests your actual local practice repository and grades all 7 tasks. | **🔒 LOCKED** *(Organizer unlocks)* |
-| **5:10–5:30** | **Final Showdown & Wrap-Up** | 10 rapid-fire questions randomized from the 35-question bank. | **🔒 LOCKED** *(Organizer unlocks)* |
 
 ---
 
