@@ -14,12 +14,27 @@ from engine.ui import (
 )
 from engine.state import format_seconds
 
+def shuffle_options(item):
+    """Return a copy of the question with options randomly shuffled and correct_index updated."""
+    q = dict(item)
+    opts = list(q.get("options", []))
+    if not opts:
+        return q
+    c_idx = q.get("correct_index", 0)
+    correct_val = opts[c_idx] if 0 <= c_idx < len(opts) else opts[0]
+    shuffled = list(opts)
+    random.shuffle(shuffled)
+    q["options"] = shuffled
+    q["correct_index"] = shuffled.index(correct_val)
+    return q
+
 def load_showdown_questions(count=10):
     content_dir = os.path.join(os.path.dirname(__file__), "content")
     path = os.path.join(content_dir, "questions_bank.json")
     with open(path, "r", encoding="utf-8") as f:
         bank = json.load(f)
-    return random.sample(bank, min(count, len(bank)))
+    selected = random.sample(bank, min(count, len(bank)))
+    return [shuffle_options(q) for q in selected]
 
 class FinalShowdownGame:
     def __init__(self, questions=None, count=10):

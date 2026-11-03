@@ -34,6 +34,20 @@ def load_json_file(filename):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def shuffle_options(item):
+    """Return a copy of the question/case with its options randomly shuffled and correct_index updated."""
+    q = dict(item)
+    opts = list(q.get("options", []))
+    if not opts:
+        return q
+    c_idx = q.get("correct_index", 0)
+    correct_val = opts[c_idx] if 0 <= c_idx < len(opts) else opts[0]
+    shuffled = list(opts)
+    random.shuffle(shuffled)
+    q["options"] = shuffled
+    q["correct_index"] = shuffled.index(correct_val)
+    return q
+
 class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
@@ -91,7 +105,8 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
             count = int(query.get("count", [10])[0])
             count = max(5, min(count, len(bank)))
             selected = random.sample(bank, count)
-            self.send_json(selected)
+            shuffled_selected = [shuffle_options(q) for q in selected]
+            self.send_json(shuffled_selected)
             return
 
         # 4. Randomized Detective Cases
@@ -100,7 +115,8 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
             count = int(query.get("count", [6])[0])
             count = max(3, min(count, len(cases)))
             selected = random.sample(cases, count)
-            self.send_json(selected)
+            shuffled_selected = [shuffle_options(c) for c in selected]
+            self.send_json(shuffled_selected)
             return
 
         # 5. Randomized Bingo Items

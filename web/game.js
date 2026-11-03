@@ -519,10 +519,11 @@ function loadDetectiveCase() {
 
   const optsEl = document.getElementById('detectiveOptions');
   optsEl.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
   c.options.forEach((opt, idx) => {
     const item = document.createElement('div');
     item.className = 'option-item';
-    item.innerHTML = `<span class="option-num">[${idx + 1}]</span> <span>${escapeHtml(opt)}</span>`;
+    item.innerHTML = `<span class="option-num">[${letters[idx] || (idx + 1)}]</span> <span>${escapeHtml(opt)}</span>`;
     item.onclick = () => selectDetectiveOption(idx);
     optsEl.appendChild(item);
   });
@@ -718,10 +719,11 @@ function loadShowdownQuestion() {
 
   const optsEl = document.getElementById('showdownOptions');
   optsEl.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
   q.options.forEach((opt, idx) => {
     const item = document.createElement('div');
     item.className = 'option-item';
-    item.innerHTML = `<span class="option-num">[${idx + 1}]</span> <span>${escapeHtml(opt)}</span>`;
+    item.innerHTML = `<span class="option-num">[${letters[idx] || (idx + 1)}]</span> <span>${escapeHtml(opt)}</span>`;
     item.onclick = () => selectShowdownOption(idx);
     optsEl.appendChild(item);
   });
@@ -746,7 +748,7 @@ function selectShowdownOption(idx) {
     const isLast = (showdownIndex === showdownQuestions.length - 1);
     if (isLast) stopRoundTimer();
     fb.innerHTML = `
-      <div style="color:#f85149; font-weight:bold; margin-bottom:10px;">✘ INCORRECT. Correct answer: ${escapeHtml(q.options[q.correct_index])}<br><small style="color:#8b949e;">${escapeHtml(q.explanation)}</small></div>
+      <div style="color:#f85149; font-weight:bold; margin-bottom:10px;">✘ INCORRECT. Correct answer: [${['A','B','C','D'][q.correct_index]}] ${escapeHtml(q.options[q.correct_index])}<br><small style="color:#8b949e;">${escapeHtml(q.explanation)}</small></div>
       <button class="btn-play" onclick="nextShowdownQuestion()">${isLast ? 'SEE RESULTS ➔' : 'CONTINUE ➔'}</button>
     `;
   }

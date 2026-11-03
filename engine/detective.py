@@ -13,12 +13,27 @@ from engine.ui import (
 )
 from engine.state import format_seconds
 
+def shuffle_options(item):
+    """Return a copy of the case with options randomly shuffled and correct_index updated."""
+    c = dict(item)
+    opts = list(c.get("options", []))
+    if not opts:
+        return c
+    c_idx = c.get("correct_index", 0)
+    correct_val = opts[c_idx] if 0 <= c_idx < len(opts) else opts[0]
+    shuffled = list(opts)
+    random.shuffle(shuffled)
+    c["options"] = shuffled
+    c["correct_index"] = shuffled.index(correct_val)
+    return c
+
 def load_detective_cases(count=6):
     content_dir = os.path.join(os.path.dirname(__file__), "content")
     path = os.path.join(content_dir, "detective_cases.json")
     with open(path, "r", encoding="utf-8") as f:
         cases = json.load(f)
-    return random.sample(cases, min(count, len(cases)))
+    selected = random.sample(cases, min(count, len(cases)))
+    return [shuffle_options(c) for c in selected]
 
 class GitDetectiveGame:
     def __init__(self, cases=None, count=6):

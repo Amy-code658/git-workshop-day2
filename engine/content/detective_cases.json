@@ -26,12 +26,12 @@
     "output_sim": "Auto-merging auth.js\nCONFLICT (content): Merge conflict in auth.js\nAutomatic merge failed; fix conflicts and then commit the result.",
     "question": "What happened, and what are the exact steps Jordan must take to finish the merge?",
     "options": [
+      "Jordan must immediately shut down their computer to cancel the merge.",
       "Both branches modified the same lines in auth.js. Jordan must open auth.js, choose the correct code, remove conflict markers, then run 'git add auth.js' and 'git commit'.",
       "Git crashed. Jordan must delete the .git folder and run 'git init' again.",
-      "Jordan must immediately shut down their computer to cancel the merge.",
       "The file auth.js is permanently corrupted and cannot be used."
     ],
-    "correct_index": 0,
+    "correct_index": 1,
     "explanation": "A merge conflict happened because opposing edits occurred on the same lines. Jordan must open auth.js in an editor, decide which code to keep, delete the '<<<<<<<', '=======', and '>>>>>>>' markers, stage the file with 'git add auth.js', and commit.",
     "pro_tip": "VS Code and modern editors provide handy 'Accept Current', 'Accept Incoming', or 'Accept Both' clickable buttons right above the conflict markers!"
   },
@@ -44,12 +44,12 @@
     "output_sim": "HEAD detached at a1b2c3d\nnothing to commit, working tree clean",
     "question": "What does 'detached HEAD' mean, and how does the student safely return to their main branch?",
     "options": [
-      "HEAD points directly to a commit hash instead of a branch. Run 'git switch main' to return safely.",
-      "The repository has lost its internet connection; restart Wi-Fi.",
       "All branches have been deleted from the hard drive.",
+      "The repository has lost its internet connection; restart Wi-Fi.",
+      "HEAD points directly to a commit hash instead of a branch. Run 'git switch main' to return safely.",
       "The user's GitHub account has been logged out."
     ],
-    "correct_index": 0,
+    "correct_index": 2,
     "explanation": "Detached HEAD means you are looking directly at a past commit snapshot rather than standing on a branch tip. Running 'git switch main' (or 'git checkout main') returns you to your active main branch without losing any work.",
     "pro_tip": "If you want to experiment starting from an old commit, create a new branch from it with 'git switch -c my-experiment'!"
   },
@@ -62,12 +62,12 @@
     "output_sim": "To https://github.com/foss-mec/project.git\n ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to 'https://github.com/foss-mec/project.git'\nhint: Updates were rejected because the remote contains work that you do\nhint: not have locally. This is usually caused by another repository pushing\nhint: to the same ref. You may want to first integrate the remote changes\nhint: (e.g., 'git pull ...') before pushing again.",
     "question": "Why did Git reject the push, and what is the proper fix?",
     "options": [
-      "A teammate pushed new commits to GitHub that Samantha does not have locally. Samantha must run 'git pull origin main' to merge them first, then push.",
-      "Samantha is not an administrator on GitHub; she must delete her repository.",
       "Samantha must use 'git push --force' to overwrite her teammates' work.",
-      "The GitHub server is down for maintenance."
+      "Samantha is not an administrator on GitHub; she must delete her repository.",
+      "The GitHub server is down for maintenance.",
+      "A teammate pushed new commits to GitHub that Samantha does not have locally. Samantha must run 'git pull origin main' to merge them first, then push."
     ],
-    "correct_index": 0,
+    "correct_index": 3,
     "explanation": "Git prevents you from accidentally overwriting commits that exist on the remote repository. Running 'git pull' fetches and merges the teammate's latest commits into your local branch so you can safely push.",
     "pro_tip": "Never run 'git push --force' on shared team branches like 'main', because it erases your teammates' commits from GitHub history!"
   },
@@ -81,9 +81,9 @@
     "question": "Which modern command instantly reverts server.js back to the clean, committed version?",
     "options": [
       "git restore server.js",
-      "git delete server.js",
+      "git revert server.js",
       "git uncommit server.js",
-      "git revert server.js"
+      "git delete server.js"
     ],
     "correct_index": 0,
     "explanation": "'git restore <file>' discards unstaged changes in your working directory and restores the file exactly as it was in your last commit.",
@@ -100,12 +100,12 @@
     "options": [
       "git log",
       "git status",
-      "git show",
-      "git check"
+      "git check",
+      "git show"
     ],
     "correct_index": 1,
     "explanation": "'git status' is your radar in Git. It reports current branch status, uncommitted changes, staged files, and untracked files.",
-    "pro_tip": "Run 'git status' before and after every major command—it's the safest habit in version control."
+    "pro_tip": "Run 'git status' before and after every major command\u2014it's the safest habit in version control."
   },
   {
     "id": "case_7",
@@ -116,8 +116,8 @@
     "output_sim": "commit 9f4a1c2b4e82d7e1039804b7c10d3f2a1b5e3c7a (HEAD -> main)\nAuthor: Jordan <jordan@example.com>\nDate:   Sun Nov 1 14:22:00 2026 +0530\n\n    Add navigation menu\n\ncommit e2b58d1039804b7c10d3f2a1b5e3c7a9f4a1c2b4\nAuthor: Amy <amy@example.com>\nDate:   Sun Nov 1 12:15:30 2026 +0530\n\n    Initial commit",
     "question": "Which command allowed Jordan to inspect this chronological history of commits?",
     "options": [
-      "git history",
       "git status",
+      "git history",
       "git log",
       "git blame"
     ],
@@ -135,11 +135,11 @@
     "question": "Which command downloads an existing GitHub repository onto your laptop?",
     "options": [
       "git init https://github.com/foss-mec/practice-repo.git",
-      "git clone https://github.com/foss-mec/practice-repo.git",
       "git download https://github.com/foss-mec/practice-repo.git",
-      "git pull https://github.com/foss-mec/practice-repo.git"
+      "git pull https://github.com/foss-mec/practice-repo.git",
+      "git clone https://github.com/foss-mec/practice-repo.git"
     ],
-    "correct_index": 1,
+    "correct_index": 3,
     "explanation": "'git clone <URL>' downloads a complete duplicate of the remote repository, creates a folder, and sets up the 'origin' remote automatically.",
     "pro_tip": "Use 'git clone' only once per project. After that, use 'git pull' to fetch future updates."
   },
@@ -152,12 +152,12 @@
     "output_sim": "Switched to a new branch 'add-my-section'",
     "question": "What is the recommended modern Git command to create and switch to a branch simultaneously?",
     "options": [
-      "git branch -m add-my-section",
       "git switch -c add-my-section",
       "git merge add-my-section",
-      "git push origin add-my-section"
+      "git push origin add-my-section",
+      "git branch -m add-my-section"
     ],
-    "correct_index": 1,
+    "correct_index": 0,
     "explanation": "'git switch -c <branch-name>' creates and switches to the new branch in a single command. ('git checkout -b <branch-name>' also works in older Git versions).",
     "pro_tip": "Branches let you experiment safely without breaking working code on the 'main' branch."
   },
@@ -170,12 +170,12 @@
     "output_sim": "error: Your local changes to the following files would be overwritten by checkout:\n\tconfig.json\nPlease commit your changes or stash them before you switch branches.\nAborting",
     "question": "How can Maya safely shelve her uncommitted changes so she can switch branches immediately?",
     "options": [
+      "Shut down the terminal and open a new project.",
       "Run 'git stash' to save uncommitted changes onto a temporary stack, switch to main, and later run 'git stash pop'.",
-      "Delete config.json so Git doesn't complain.",
       "Force switch with 'git switch -f main' and discard all her work.",
-      "Shut down the terminal and open a new project."
+      "Delete config.json so Git doesn't complain."
     ],
-    "correct_index": 0,
+    "correct_index": 1,
     "explanation": "'git stash' temporarily stashes away your dirty working state without creating a permanent commit. You can freely switch branches, and later reapply your stashed work with 'git stash pop'.",
     "pro_tip": "'git stash' is one of the most beloved tools in Git for handling unexpected context switches!"
   },
@@ -188,12 +188,12 @@
     "output_sim": "On branch main\nChanges to be committed:\n  (use \"git restore --staged <file>...\" to unstage)\n\tnew file:   secrets.env",
     "question": "Which command removes secrets.env from the staging area without deleting the file from disk?",
     "options": [
-      "git restore --staged secrets.env",
       "git rm -f secrets.env",
-      "git delete secrets.env",
-      "git drop secrets.env"
+      "git drop secrets.env",
+      "git restore --staged secrets.env",
+      "git delete secrets.env"
     ],
-    "correct_index": 0,
+    "correct_index": 2,
     "explanation": "'git restore --staged <file>' removes the file from the upcoming commit snapshot while leaving your local file completely intact on your hard drive.",
     "pro_tip": "Always add private keys, database passwords, and .env files to your '.gitignore' file so Git never tracks them!"
   },
@@ -206,12 +206,12 @@
     "output_sim": "fatal: The current branch add-my-section has no upstream branch.\nTo push the current branch and set the remote as upstream, use\n\n    git push --set-upstream origin add-my-section",
     "question": "What should the student do to publish this new branch to GitHub for the first time?",
     "options": [
-      "Run 'git push -u origin add-my-section' (or --set-upstream).",
-      "Delete the branch with 'git branch -D add-my-section' and try on main.",
       "Re-initialize Git with 'git init --force'.",
-      "Turn off the Wi-Fi and push locally."
+      "Turn off the Wi-Fi and push locally.",
+      "Delete the branch with 'git branch -D add-my-section' and try on main.",
+      "Run 'git push -u origin add-my-section' (or --set-upstream)."
     ],
-    "correct_index": 0,
+    "correct_index": 3,
     "explanation": "When pushing a brand new local branch for the first time, GitHub doesn't know about it yet. The '-u' (or '--set-upstream') flag tells Git to create a matching remote branch and link your local branch to it.",
     "pro_tip": "Once upstream is configured with '-u', all future pushes on that branch can be done with just 'git push'!"
   }
