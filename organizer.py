@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-organizer.py - Facilitator & Presenter Suite for Git Workshop Day 2.
-Designed for the organizer to run on the presenter laptop connected to the projector.
-Controls stage locks (e.g. unlocking Game 2: Git Detective), displays live leaderboards with time tracking,
-projects clues & crime scenes, and verifies participant tokens.
+organizer.py - Facilitator & Presenter Suite for FOSS MEC Git Workshop Day 2.
+Runs the central workshop hub server, controls stage locks (e.g. unlocking Game 2: Git Detective),
+displays live room-wide leaderboards with time tracking, and projects clues/scenarios.
 Zero external dependencies (pure Python 3 standard library).
 """
 
@@ -12,6 +11,7 @@ import sys
 import time
 import subprocess
 import shutil
+import threading
 
 # Ensure repo root is on sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -21,38 +21,66 @@ from engine.ui import (
     print_box, print_terminal_sim, ask_choice, ask_text, get_terminal_width
 )
 from engine.state import (
-    STAGE_NAMES, STAGE_PASSWORDS, get_leaderboard, format_seconds, get_first_finishers
+    STAGE_NAMES, STAGE_PASSWORDS, get_leaderboard, format_seconds,
+    get_first_finishers, get_workshop_status, set_workshop_status,
+    get_lan_ip
 )
+from engine.server import start_hub_server
 from engine.bingo import load_bingo_items
 from engine.detective import load_detective_cases
 from engine.quest import verify_token
 
-ORGANIZER_STATUS = {
-    "unlocked": [1],
-    "current_stage": 1
-}
+# Background server handle
+HUB_SERVER = None
+HUB_PORT = 5000
+HUB_IP = get_lan_ip()
+
+def ensure_hub_running():
+    """Ensure the Central Workshop Hub Server is running in the background."""
+    global HUB_SERVER, HUB_PORT
+    if HUB_SERVER is None:
+        try:
+            HUB_SERVER, HUB_PORT = start_hub_server(port=5000, start_beacon=True)
+            t = threading.Thread(target=HUB_SERVER.serve_forever, daemon=True)
+            t.start()
+        except Exception as e:
+            print(f"Warning: Could not start central hub on port 5000: {e}")
+
+def print_hub_header():
+    """Print the connection address banner for projector and students."""
+    lan_ip = get_lan_ip()
+    width = min(get_terminal_width(), 84)
+    print(f"{Colors.BG_BLUE}{Colors.BRIGHT_WHITE}{' 🌐 FOSS MEC WORKSHOP HUB ACTIVE '.center(width)}{Colors.RESET}")
+    print(f"  {Colors.BOLD}Projector URL:{Colors.RESET}   {Colors.BRIGHT_GREEN}http://localhost:{HUB_PORT}{Colors.RESET}")
+    print(f"  {Colors.BOLD}Student URL:{Colors.RESET}     {Colors.BRIGHT_YELLOW}{Colors.BOLD}http://{lan_ip}:{HUB_PORT}{Colors.RESET} (Open on any laptop / phone)")
+    print(f"{Colors.DIM}{'─' * width}{Colors.RESET}\n")
 
 def unlock_stage_manager():
-    """Organizer stage unlock controller."""
+    """Organizer stage unlock controller that instantly broadcasts to all laptops."""
     clear_screen()
-    print_banner("ORGANIZER STAGE CONTROLLER", "Release stages for 65 participants", badge="STAGE MANAGER", color=Colors.BRIGHT_YELLOW)
+    print_banner("STAGE CONTROLLER & LIVE BROADCAST", "Unlocks reflect immediately on all student laptops", badge="STAGE MANAGER", color=Colors.BRIGHT_YELLOW)
+    print_hub_header()
     
+    st = get_workshop_status()
+    unlocked = st.get("unlocked", [1])
     first_finishers = get_first_finishers()
-    print("CURRENT STAGE STATUS & FIRST FINISHERS (+100 PTS BONUS):")
+
+    print("CURRENT WORKSHOP STAGE STATUS:")
     for s in range(1, 6):
-        is_open = s in ORGANIZER_STATUS["unlocked"]
-        status_str = f"{Colors.BRIGHT_GREEN}[UNLOCKED - OPEN]{Colors.RESET}" if is_open else f"{Colors.BRIGHT_RED}[LOCKED]{Colors.RESET}"
+        is_open = s in unlocked
+        status_str = f"{Colors.BRIGHT_GREEN}[UNLOCKED - LIVE]{Colors.RESET}" if is_open else f"{Colors.BRIGHT_RED}[LOCKED]{Colors.RESET}"
         pwd = STAGE_PASSWORDS.get(s, "N/A")
-        finisher = first_finishers.get(str(s), "None yet (100 pt bonus unclaimed!)")
-        print(f"  Stage {s}: {STAGE_NAMES[s]:<20} {status_str} | Code: {Colors.BOLD}{pwd:<12}{Colors.RESET} | ⚡ 1st: {Colors.YELLOW}{finisher}{Colors.RESET}")
+        finisher = first_finishers.get(str(s), "Unclaimed (+100 pt bonus)")
+        print(f"  Stage {s}: {STAGE_NAMES[s]:<20} {status_str} | Passcode: {Colors.BOLD}{pwd:<12}{Colors.RESET} | ⚡ 1st: {Colors.YELLOW}{finisher}{Colors.RESET}")
         
-    print("\nSelect a stage to toggle unlock/lock:")
+    print("\nSelect a stage to toggle unlock/lock (reflects on all student screens within 2s):")
     opts = [
         f"Unlock Stage 2: Git Detective (Passcode: {STAGE_PASSWORDS[2]})",
         f"Unlock Stage 3: Branching Demo  (Passcode: {STAGE_PASSWORDS[3]})",
         f"Unlock Stage 4: Git Quest       (Passcode: {STAGE_PASSWORDS[4]})",
         f"Unlock Stage 5: Final Showdown  (Passcode: {STAGE_PASSWORDS[5]})",
-        "Project Stage Unlock Codes on Screen"
+        "Lock a Stage",
+        "Project Stage Unlock Codes on Big Screen"
     ]
     
     choice = ask_choice("Action:", opts, allow_quit=True)
@@ -60,48 +88,62 @@ def unlock_stage_manager():
         return
     elif choice in (0, 1, 2, 3):
         stg = choice + 2
-        if stg not in ORGANIZER_STATUS["unlocked"]:
-            ORGANIZER_STATUS["unlocked"].append(stg)
+        if stg not in unlocked:
+            unlocked.append(stg)
+            set_workshop_status(unlocked, current_stage=stg)
             print(f"\n{Colors.BRIGHT_GREEN}✔ Stage {stg} ({STAGE_NAMES[stg]}) is now officially UNLOCKED!{Colors.RESET}")
-            print(f"Announce passcode {Colors.BOLD}{STAGE_PASSWORDS[stg]}{Colors.RESET} to the room or project it!\n")
+            print(f"All student screens will update automatically within 2 seconds!\n")
         else:
             print(f"\n{Colors.YELLOW}Stage {stg} is already unlocked.{Colors.RESET}\n")
         pause()
     elif choice == 4:
+        stg_in = ask_text("Enter stage number to lock (2-5)")
+        try:
+            s_num = int(stg_in)
+            if s_num in unlocked and s_num != 1:
+                unlocked.remove(s_num)
+                set_workshop_status(unlocked)
+                print(f"\n{Colors.RED}Stage {s_num} locked.{Colors.RESET}")
+        except ValueError:
+            pass
+        pause()
+    elif choice == 5:
         project_stage_codes()
 
 
 def project_stage_codes():
     """Project big unlock passcodes on the projector screen for students."""
     clear_screen()
-    print_banner("WORKSHOP STAGE UNLOCK PASSCODES", "Announce or project to all participants", badge="PROJECTOR SCREEN", color=Colors.BRIGHT_CYAN)
+    lan_ip = get_lan_ip()
+    print_banner("FOSS MEC: STAGE UNLOCK PASSCODES", "Announce or project to all participants", badge="PROJECTOR SCREEN", color=Colors.BRIGHT_CYAN)
     
     code_text = (
         f"\n"
+        f"  🌐 Connect to Arena at:  {Colors.BOLD}{Colors.BRIGHT_YELLOW}http://{lan_ip}:{HUB_PORT}{Colors.RESET}\n\n"
         f"  🎯 Stage 1: Git Bingo       ➔  OPEN BY DEFAULT\n\n"
-        f"  🕵️ Stage 2: Git Detective   ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[2]}{Colors.RESET}\n\n"
-        f"  🌿 Stage 3: Branching Demo  ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[3]}{Colors.RESET}\n\n"
-        f"  ⚔️ Stage 4: Git Quest (100) ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[4]}{Colors.RESET}\n\n"
-        f"  ⚡ Stage 5: Final Showdown  ➔  CODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[5]}{Colors.RESET}\n"
+        f"  🕵️ Stage 2: Git Detective   ➔  PASSCODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[2]}{Colors.RESET}\n\n"
+        f"  🌿 Stage 3: Branching Demo  ➔  PASSCODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[3]}{Colors.RESET}\n\n"
+        f"  ⚔️ Stage 4: Git Quest (100) ➔  PASSCODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[4]}{Colors.RESET}\n\n"
+        f"  ⚡ Stage 5: Final Showdown  ➔  PASSCODE:  {Colors.BOLD}{Colors.BRIGHT_GREEN}{STAGE_PASSWORDS[5]}{Colors.RESET}\n"
     )
     print_box(code_text, title="ORGANIZER RELEASE KEYS", color=Colors.BRIGHT_YELLOW)
-    print(f"\n{Colors.DIM}Students can type the matching code on their laptops to unlock each round!{Colors.RESET}")
     pause()
 
 
 def projector_master_leaderboard():
-    """Fullscreen projector leaderboard with scores and total elapsed times."""
+    """Fullscreen projector leaderboard updating live."""
     clear_screen()
-    print_banner("GIT WORKSHOP ARENA: OFFICIAL LEADERBOARD", "Ranked by Score • Tie-broken by Lowest Time", badge="LIVE RANKINGS", color=Colors.BRIGHT_MAGENTA)
+    print_banner("FOSS MEC: LIVE WORKSHOP LEADERBOARD", "Real-Time Room Rankings (Ties broken by Lowest Time)", badge="LIVE RANKINGS", color=Colors.BRIGHT_MAGENTA)
+    print_hub_header()
     
-    entries = get_leaderboard(limit=25)
+    entries = get_leaderboard(limit=30)
     width = min(get_terminal_width(), 86)
     
     print(f"{'RANK':<8} {'STUDENT NAME':<26} {'CLASS / BATCH':<18} {'SCORE':<12} {'TOTAL TIME'}")
     print(f"{'═' * width}")
     
     if not entries:
-        print(f"\n  {Colors.DIM}No scores registered yet. As students complete challenges, scores appear here!{Colors.RESET}\n")
+        print(f"\n  {Colors.DIM}No scores registered yet. As students join at http://{get_lan_ip()}:{HUB_PORT}, their scores appear here live!{Colors.RESET}\n")
     else:
         for idx, e in enumerate(entries, 1):
             if idx == 1:
@@ -133,7 +175,6 @@ def projector_bingo():
     items = load_bingo_items()
     clear_screen()
     print_banner("ORGANIZER PROJECTOR: GIT BINGO ROUND", "Present clues on the big screen & reveal answers", badge="PROJECTOR MODE", color=Colors.BRIGHT_MAGENTA)
-    print("Project your terminal on the big screen.")
     print("Display each clue, give students 15–30 seconds to check their unique 3x3 cards,")
     print("then press Enter to reveal the correct command and explanation.\n")
     pause("Press Enter to begin Question 1...")
@@ -294,18 +335,21 @@ def generate_sandbox_repo():
 
 def organizer_menu():
     """Main Organizer Dashboard."""
+    ensure_hub_running()
+    
     while True:
         clear_screen()
         print_banner(
-            "GIT WORKSHOP: ORGANIZER & FACILITATOR DASHBOARD",
-            "Controls, Stage Unlocks & Master Projector Views",
+            "FOSS MEC: ORGANIZER & FACILITATOR DASHBOARD",
+            "Central Workshop Hub, Stage Controls & Master Leaderboard",
             badge="PRESENTER MODE",
             color=Colors.BRIGHT_YELLOW
         )
+        print_hub_header()
         
         options = [
-            "🔓 Stage Unlock Controller (Release Stage 2, 3, 4, 5 & View 1st Finishers)",
-            "🏆 Projector View: Live Master Leaderboard (Scores & Times)",
+            "🔓 Stage Unlock Controller (Release Stage 2, 3, 4, 5 live to all laptops)",
+            "🏆 Projector View: Live Room Leaderboard (Scores & Times)",
             "🔑 Project Stage Unlock Codes (Big Screen Display)",
             "📽️  Projector View: Git Bingo (Clues & Answer Reveals)",
             "📽️  Projector View: Git Detective (Crime Scenes & Reveals)",

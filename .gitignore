@@ -8,3 +8,5 @@ git-practice-sandbox/
 .player_save.json
 leaderboard.json
 .first_finishers.json
+organizer_info.json
+organizer_ip.txt

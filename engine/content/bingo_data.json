@@ -9,7 +9,7 @@
     "id": "commit",
     "command": "git commit",
     "prompt": "Which command records a permanent snapshot of your staged changes with a descriptive message?",
-    "explanation": "'git commit -m \"message\"' stores staged changes into the repository history as a new snapshot."
+    "explanation": "'git commit -m \"message\"' stores staged changes into repository history as a new snapshot."
   },
   {
     "id": "push",
@@ -56,7 +56,7 @@
   {
     "id": "diff",
     "command": "git diff",
-    "prompt": "Which command shows the exact line-by-line differences between your working files and the last commit?",
+    "prompt": "Which command shows the exact line-by-line differences between your working files and the staging area?",
     "explanation": "'git diff' shows additions (+) and deletions (-) in your files before you stage them."
   },
   {
@@ -70,5 +70,41 @@
     "command": "git config",
     "prompt": "Which command configures your global username and email address used for commit signatures?",
     "explanation": "'git config --global user.name' and 'user.email' attach your identity to every commit you make."
+  },
+  {
+    "id": "merge",
+    "command": "git merge",
+    "prompt": "Which command combines the history and changes from another branch into your current active branch?",
+    "explanation": "'git merge <branch>' integrates the specified branch's commits into the branch you have checked out."
+  },
+  {
+    "id": "stash",
+    "command": "git stash",
+    "prompt": "Which command temporarily shelves and saves your dirty uncommitted changes so you have a clean working tree?",
+    "explanation": "'git stash' saves your uncommitted changes onto a temporary stack so you can switch branches or pull."
+  },
+  {
+    "id": "stash_pop",
+    "command": "git stash pop",
+    "prompt": "Which command restores and reapplies your most recently stashed changes back into your working directory?",
+    "explanation": "'git stash pop' reapplies the top stashed changes and removes them from the stash stack."
+  },
+  {
+    "id": "restore",
+    "command": "git restore",
+    "prompt": "Which modern command discards uncommitted modifications in a file, reverting it back to the last commit?",
+    "explanation": "'git restore <file>' discards unstaged changes in your working directory."
+  },
+  {
+    "id": "remote_v",
+    "command": "git remote -v",
+    "prompt": "Which command lists all configured remote connection names and their fetch/push URLs?",
+    "explanation": "'git remote -v' shows the names (like 'origin') and exact URLs of all connected remote repositories."
+  },
+  {
+    "id": "switch",
+    "command": "git switch",
+    "prompt": "Which command safely switches from your current branch to an already existing branch like 'main'?",
+    "explanation": "'git switch <branch-name>' changes HEAD to point to the named existing branch."
   }
 ]

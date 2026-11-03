@@ -14,11 +14,83 @@
       "The file must be renamed to README.txt before committing."
     ],
     "correct_index": 0,
-    "explanation": "In Git, changes in your working tree must first be staged (indexed) before they can be committed. Taylor need to run 'git add README.md' (or 'git add .') to stage the modifications before committing.",
-    "pro_tip": "Think of staging as packing items into a box ('git add'), and committing as taping the box shut with a label ('git commit')."
+    "explanation": "In Git, changes in your working tree must first be staged (indexed) with 'git add' before they can be committed. Taylor needs to run 'git add README.md' (or 'git add .') to stage the modifications.",
+    "pro_tip": "Think of staging as packing items into a shipping box ('git add'), and committing as taping the box shut with a label ('git commit')."
   },
   {
     "id": "case_2",
+    "title": "The Merge Collision",
+    "difficulty": "Intermediate",
+    "scenario": "Jordan ran 'git merge feature-login' into 'main'. Instead of completing cleanly, Git paused with the message below and inserted strange angle brackets inside auth.js.",
+    "command_sim": "git merge feature-login",
+    "output_sim": "Auto-merging auth.js\nCONFLICT (content): Merge conflict in auth.js\nAutomatic merge failed; fix conflicts and then commit the result.",
+    "question": "What happened, and what are the exact steps Jordan must take to finish the merge?",
+    "options": [
+      "Both branches modified the same lines in auth.js. Jordan must open auth.js, choose the correct code, remove conflict markers, then run 'git add auth.js' and 'git commit'.",
+      "Git crashed. Jordan must delete the .git folder and run 'git init' again.",
+      "Jordan must immediately shut down their computer to cancel the merge.",
+      "The file auth.js is permanently corrupted and cannot be used."
+    ],
+    "correct_index": 0,
+    "explanation": "A merge conflict happened because opposing edits occurred on the same lines. Jordan must open auth.js in an editor, decide which code to keep, delete the '<<<<<<<', '=======', and '>>>>>>>' markers, stage the file with 'git add auth.js', and commit.",
+    "pro_tip": "VS Code and modern editors provide handy 'Accept Current', 'Accept Incoming', or 'Accept Both' clickable buttons right above the conflict markers!"
+  },
+  {
+    "id": "case_3",
+    "title": "The Detached Navigator",
+    "difficulty": "Intermediate",
+    "scenario": "A student wanted to check an old commit and ran 'git checkout a1b2c3d'. Now their terminal prompt says 'HEAD detached at a1b2c3d'. They want to know what this means.",
+    "command_sim": "git status",
+    "output_sim": "HEAD detached at a1b2c3d\nnothing to commit, working tree clean",
+    "question": "What does 'detached HEAD' mean, and how does the student safely return to their main branch?",
+    "options": [
+      "HEAD points directly to a commit hash instead of a branch. Run 'git switch main' to return safely.",
+      "The repository has lost its internet connection; restart Wi-Fi.",
+      "All branches have been deleted from the hard drive.",
+      "The user's GitHub account has been logged out."
+    ],
+    "correct_index": 0,
+    "explanation": "Detached HEAD means you are looking directly at a past commit snapshot rather than standing on a branch tip. Running 'git switch main' (or 'git checkout main') returns you to your active main branch without losing any work.",
+    "pro_tip": "If you want to experiment starting from an old commit, create a new branch from it with 'git switch -c my-experiment'!"
+  },
+  {
+    "id": "case_4",
+    "title": "The Rejected Cloud Push",
+    "difficulty": "Intermediate",
+    "scenario": "Samantha made a great commit locally and tried pushing to GitHub, but Git rejected the push with the output below.",
+    "command_sim": "git push origin main",
+    "output_sim": "To https://github.com/foss-mec/project.git\n ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to 'https://github.com/foss-mec/project.git'\nhint: Updates were rejected because the remote contains work that you do\nhint: not have locally. This is usually caused by another repository pushing\nhint: to the same ref. You may want to first integrate the remote changes\nhint: (e.g., 'git pull ...') before pushing again.",
+    "question": "Why did Git reject the push, and what is the proper fix?",
+    "options": [
+      "A teammate pushed new commits to GitHub that Samantha does not have locally. Samantha must run 'git pull origin main' to merge them first, then push.",
+      "Samantha is not an administrator on GitHub; she must delete her repository.",
+      "Samantha must use 'git push --force' to overwrite her teammates' work.",
+      "The GitHub server is down for maintenance."
+    ],
+    "correct_index": 0,
+    "explanation": "Git prevents you from accidentally overwriting commits that exist on the remote repository. Running 'git pull' fetches and merges the teammate's latest commits into your local branch so you can safely push.",
+    "pro_tip": "Never run 'git push --force' on shared team branches like 'main', because it erases your teammates' commits from GitHub history!"
+  },
+  {
+    "id": "case_5",
+    "title": "The Regretted Edit",
+    "difficulty": "Beginner",
+    "scenario": "Alex accidentally made experimental changes in 'server.js' that broke the app. The file has NOT been staged with 'git add'. Alex wants to instantly throw away these uncommitted changes and return to the last commit.",
+    "command_sim": "git status",
+    "output_sim": "On branch main\nChanges not staged for commit:\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   server.js\n\nno changes added to commit (use \"git add\")",
+    "question": "Which modern command instantly reverts server.js back to the clean, committed version?",
+    "options": [
+      "git restore server.js",
+      "git delete server.js",
+      "git uncommit server.js",
+      "git revert server.js"
+    ],
+    "correct_index": 0,
+    "explanation": "'git restore <file>' discards unstaged changes in your working directory and restores the file exactly as it was in your last commit.",
+    "pro_tip": "'git restore' is safe and specific to the file you name. To restore all unstaged files in the folder, use 'git restore .'."
+  },
+  {
+    "id": "case_6",
     "title": "The Mysterious Modified Files",
     "difficulty": "Beginner",
     "scenario": "Alex just pulled a seat at the laptop after a quick break and forgot which files were edited before lunch. How can Alex quickly inspect which files have changed in the workspace?",
@@ -36,7 +108,7 @@
     "pro_tip": "Run 'git status' before and after every major command—it's the safest habit in version control."
   },
   {
-    "id": "case_3",
+    "id": "case_7",
     "title": "The Time Machine Investigation",
     "difficulty": "Beginner",
     "scenario": "The team noticed a bug introduced yesterday. Jordan wants to view the history of past commits, including who authored them, their timestamps, and the commit messages.",
@@ -54,25 +126,25 @@
     "pro_tip": "Use 'git log --oneline --graph' to get a concise, beautiful tree visualization of your project's history."
   },
   {
-    "id": "case_4",
+    "id": "case_8",
     "title": "The Missing Local Copy",
     "difficulty": "Beginner",
-    "scenario": "A student finds an open-source practice project on GitHub at 'https://github.com/git-workshop/practice-repo.git' and wants to download a full local copy of the code and Git history onto their laptop.",
-    "command_sim": "git ??? https://github.com/git-workshop/practice-repo.git",
+    "scenario": "A student finds an open-source practice project on GitHub at 'https://github.com/foss-mec/practice-repo.git' and wants to download a full local copy of the code and Git history onto their laptop.",
+    "command_sim": "git ??? https://github.com/foss-mec/practice-repo.git",
     "output_sim": "Cloning into 'practice-repo'...\nremote: Enumerating objects: 24, done.\nremote: Counting objects: 100% (24/24), done.\nremote: Compressing objects: 100% (18/18), done.\nReceiving objects: 100% (24/24), 4.12 KiB | 4.12 MiB/s, done.",
     "question": "Which command downloads an existing GitHub repository onto your laptop?",
     "options": [
-      "git init https://github.com/git-workshop/practice-repo.git",
-      "git clone https://github.com/git-workshop/practice-repo.git",
-      "git download https://github.com/git-workshop/practice-repo.git",
-      "git pull https://github.com/git-workshop/practice-repo.git"
+      "git init https://github.com/foss-mec/practice-repo.git",
+      "git clone https://github.com/foss-mec/practice-repo.git",
+      "git download https://github.com/foss-mec/practice-repo.git",
+      "git pull https://github.com/foss-mec/practice-repo.git"
     ],
     "correct_index": 1,
     "explanation": "'git clone <URL>' downloads a complete duplicate of the remote repository, creates a folder, and sets up the 'origin' remote automatically.",
     "pro_tip": "Use 'git clone' only once per project. After that, use 'git pull' to fetch future updates."
   },
   {
-    "id": "case_5",
+    "id": "case_9",
     "title": "The Feature Isolation Mission",
     "difficulty": "Intermediate",
     "scenario": "During Day 2's collaborative demo, the facilitator instructs everyone to create a new branch named 'add-my-section' so they don't modify 'main' directly, and switch to it immediately in one command.",
@@ -90,8 +162,44 @@
     "pro_tip": "Branches let you experiment safely without breaking working code on the 'main' branch."
   },
   {
-    "id": "case_6",
-    "title": "The Cloud Leap",
+    "id": "case_10",
+    "title": "The Emergency Interruption",
+    "difficulty": "Intermediate",
+    "scenario": "Maya has half-written changes across 4 files on her feature branch. Her manager asks her to urgently switch to 'main' and pull a production fix. Running 'git switch main' gives an error because her working tree is dirty.",
+    "command_sim": "git switch main",
+    "output_sim": "error: Your local changes to the following files would be overwritten by checkout:\n\tconfig.json\nPlease commit your changes or stash them before you switch branches.\nAborting",
+    "question": "How can Maya safely shelve her uncommitted changes so she can switch branches immediately?",
+    "options": [
+      "Run 'git stash' to save uncommitted changes onto a temporary stack, switch to main, and later run 'git stash pop'.",
+      "Delete config.json so Git doesn't complain.",
+      "Force switch with 'git switch -f main' and discard all her work.",
+      "Shut down the terminal and open a new project."
+    ],
+    "correct_index": 0,
+    "explanation": "'git stash' temporarily stashes away your dirty working state without creating a permanent commit. You can freely switch branches, and later reapply your stashed work with 'git stash pop'.",
+    "pro_tip": "'git stash' is one of the most beloved tools in Git for handling unexpected context switches!"
+  },
+  {
+    "id": "case_11",
+    "title": "The Accidental Secret Key",
+    "difficulty": "Intermediate",
+    "scenario": "David added an API key file 'secrets.env' and ran 'git add secrets.env'. Before committing, David realizes this private key must NEVER be pushed to GitHub. How should David un-stage it?",
+    "command_sim": "git status",
+    "output_sim": "On branch main\nChanges to be committed:\n  (use \"git restore --staged <file>...\" to unstage)\n\tnew file:   secrets.env",
+    "question": "Which command removes secrets.env from the staging area without deleting the file from disk?",
+    "options": [
+      "git restore --staged secrets.env",
+      "git rm -f secrets.env",
+      "git delete secrets.env",
+      "git drop secrets.env"
+    ],
+    "correct_index": 0,
+    "explanation": "'git restore --staged <file>' removes the file from the upcoming commit snapshot while leaving your local file completely intact on your hard drive.",
+    "pro_tip": "Always add private keys, database passwords, and .env files to your '.gitignore' file so Git never tracks them!"
+  },
+  {
+    "id": "case_12",
+    "title": "The Upstream Link",
     "difficulty": "Intermediate",
     "scenario": "A student made a commit on their new branch 'add-my-section'. When they tried running just 'git push', Git paused with the message below.",
     "command_sim": "git push",

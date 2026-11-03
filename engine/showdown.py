@@ -1,26 +1,29 @@
 """
 showdown.py - Activity E: Final Showdown & Wrap-Up
-Rapid-fire individual quiz with timer tracking and answer streaks.
+Rapid-fire individual quiz with timer tracking, answer streaks,
+and randomized sampling from the 35+ fact-checked questions bank.
 """
 
 import os
 import json
 import time
+import random
 from engine.ui import (
     Colors, clear_screen, pause, print_banner,
     ask_choice, print_box
 )
 from engine.state import format_seconds
 
-def load_showdown_questions():
+def load_showdown_questions(count=10):
     content_dir = os.path.join(os.path.dirname(__file__), "content")
-    path = os.path.join(content_dir, "showdown_questions.json")
+    path = os.path.join(content_dir, "questions_bank.json")
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        bank = json.load(f)
+    return random.sample(bank, min(count, len(bank)))
 
 class FinalShowdownGame:
-    def __init__(self, questions=None):
-        self.questions = questions or load_showdown_questions()
+    def __init__(self, questions=None, count=10):
+        self.questions = questions or load_showdown_questions(count=count)
         self.score = 0
         self.streak = 0
         self.max_streak = 0
@@ -32,7 +35,7 @@ class FinalShowdownGame:
         clear_screen()
         print_banner("THE FINAL SHOWDOWN", "Rapid-fire review of Git mastery • Timer is running!", badge="ACTIVITY E", color=Colors.BRIGHT_MAGENTA)
         print(f"{Colors.WHITE}Welcome to the Grand Finale!{Colors.RESET}")
-        print("10 rapid-fire questions testing speed and accuracy.")
+        print(f"You will receive {len(self.questions)} randomized questions across branching, merging, conflicts, and PRs.")
         print("Your total time is tracked and affects your final workshop standing!\n")
         pause("Press Enter to START TIMER & begin...")
 
@@ -43,8 +46,9 @@ class FinalShowdownGame:
             self.elapsed_time = round(time.time() - self.start_time, 1)
             badge = f"Q {idx}/{len(self.questions)}"
             streak_display = f"🔥 Streak: {self.streak}" if self.streak > 1 else ""
+            topic_str = f"[{q.get('topic', 'Git')}]"
             status_line = f"Score: {self.score} pts | ⏱️ Time: {format_seconds(self.elapsed_time)} | {streak_display}"
-            print_banner(f"FINAL SHOWDOWN", status_line, badge=badge, color=Colors.CYAN)
+            print_banner(f"FINAL SHOWDOWN {topic_str}", status_line, badge=badge, color=Colors.CYAN)
             
             chosen_idx = ask_choice(q["question"], q["options"], allow_quit=True)
             if chosen_idx == -1:
@@ -63,10 +67,12 @@ class FinalShowdownGame:
                 pts = int(10 * multiplier)
                 self.score += pts
                 print(f"\n{Colors.BRIGHT_GREEN}{Colors.BOLD}✔ CORRECT! (+{pts} pts){Colors.RESET}")
+                print(f"{Colors.GREEN}{q['explanation']}{Colors.RESET}\n")
             else:
                 self.streak = 0
                 correct_text = q["options"][q["correct_index"]]
-                print(f"\n{Colors.BRIGHT_RED}{Colors.BOLD}✘ INCORRECT! Correct: {correct_text}{Colors.RESET}")
+                print(f"\n{Colors.BRIGHT_RED}{Colors.BOLD}✘ INCORRECT!{Colors.RESET} Correct: {Colors.BOLD}{correct_text}{Colors.RESET}")
+                print(f"{Colors.DIM}{q['explanation']}{Colors.RESET}\n")
 
             pause("Press Enter for the next question...")
 
@@ -76,6 +82,6 @@ class FinalShowdownGame:
         pause()
         return self.score, self.elapsed_time, True
 
-def run_showdown():
-    game = FinalShowdownGame()
+def run_showdown(count=10):
+    game = FinalShowdownGame(count=count)
     return game.play()

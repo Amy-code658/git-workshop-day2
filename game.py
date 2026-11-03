@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-game.py - Participant Game Interface for Git Workshop Day 2.
-Includes full Welcome Screen (Name & Class input), Live Leaderboard updating,
+game.py - Participant Game Interface for FOSS MEC Git Workshop Day 2.
+Includes full Welcome Screen (Name & Class input), Live Room-Wide Leaderboard updating,
 Stop-on-Bingo with randomized cards, Time Tracking, First-Finisher Bonuses (+100 pts),
 Locked Stage 2 (until organizer opens it), and dual Web / Terminal UI.
 Zero external packages or dependencies.
@@ -21,14 +21,41 @@ from engine.ui import (
     print_box, ask_choice, ask_text, status_badge, get_terminal_width
 )
 from engine.state import (
-    PlayerState, get_leaderboard, STAGE_NAMES, STAGE_PASSWORDS, format_seconds
+    PlayerState, get_leaderboard, STAGE_NAMES, STAGE_PASSWORDS, format_seconds,
+    get_lan_ip
 )
-from engine.server import start_game_server
+from engine.server import start_hub_server, discover_hub_ip
 from engine.bingo import run_bingo
 from engine.detective import run_detective
 from engine.branching_guide import run_branching_guide
 from engine.quest import run_quest
 from engine.showdown import run_showdown
+
+def detect_or_ask_hub():
+    """Detect or ask for the central Organizer Hub URL."""
+    # 1. Command-line argument: --connect http://...
+    for i, arg in enumerate(sys.argv):
+        if arg in ("--connect", "--hub", "-h") and i + 1 < len(sys.argv):
+            return sys.argv[i + 1].rstrip("/")
+            
+    # 2. Check organizer_ip.txt if it exists
+    ip_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "organizer_ip.txt")
+    if os.path.exists(ip_file):
+        try:
+            with open(ip_file, "r") as f:
+                content = f.read().strip()
+                if content:
+                    return content.rstrip("/")
+        except Exception:
+            pass
+
+    # 3. Auto-discover via UDP beacon on Wi-Fi (takes 0.8s)
+    discovered = discover_hub_ip(timeout=0.8)
+    if discovered:
+        return discovered
+
+    return None
+
 
 def terminal_welcome_registration(state):
     """Ensure student enters their Name and Class before playing."""
@@ -36,11 +63,11 @@ def terminal_welcome_registration(state):
         return
         
     clear_screen()
-    print_banner("WELCOME TO THE GIT WORKSHOP ARENA", "Day 2 Interactive Games & Challenges", badge="REGISTRATION", color=Colors.BRIGHT_CYAN)
+    print_banner("FOSS MEC: GIT WORKSHOP ARENA", "Govt. Model Engineering College • Day 2", badge="REGISTRATION", color=Colors.BRIGHT_CYAN)
     
     welcome_text = (
-        "Welcome! To join the live leaderboard and track your points & time,\n"
-        "please enter your full name and class/batch below."
+        "Welcome to the FOSS MEC Git Arena!\n"
+        "Enter your full name and class/batch below to join the live room leaderboard."
     )
     print_box(welcome_text, title="PLAYER REGISTRATION", color=Colors.YELLOW)
     
@@ -51,36 +78,38 @@ def terminal_welcome_registration(state):
         print(f"{Colors.RED}Name cannot be empty.{Colors.RESET}")
         
     while True:
-        class_name = ask_text("Enter your Class / Batch / Division (e.g. CSE-3A, 11-B)")
+        class_name = ask_text("Enter your Class / Batch / Division (e.g. CS-A, EB, 1st Year)")
         if class_name.strip():
             break
         print(f"{Colors.RED}Class cannot be empty.{Colors.RESET}")
         
     state.register(name, class_name)
     print(f"\n{Colors.BRIGHT_GREEN}{Colors.BOLD}✔ Registration Complete! Welcome, {state.name} ({state.class_name})!{Colors.RESET}")
-    pause("Press Enter to enter the game arena...")
+    pause("Press Enter to enter the arena...")
 
 
 def print_player_hud(state):
     """Render top player HUD bar in terminal with points and total time."""
     width = get_terminal_width()
     time_str = format_seconds(state.total_time)
-    hud = f" 👤 {state.name} | 🏫 {state.class_name} | 🏆 {state.score} PTS | ⏱️ TIME: {time_str} | 🎮 UNLOCKED: {len(state.unlocked_stages)}/5 "
+    hub_badge = f" [HUB: {state.hub_url}]" if state.hub_url else ""
+    hud = f" 👤 {state.name} | 🏫 {state.class_name} | 🏆 {state.score} PTS | ⏱️ TIME: {time_str}{hub_badge} "
     print(f"{Colors.BG_BLUE}{Colors.BRIGHT_WHITE}{hud.center(width)}{Colors.RESET}\n")
 
 
 def view_terminal_leaderboard(state):
     """Render live leaderboard view in terminal with scores and times."""
     clear_screen()
-    print_banner("GIT WORKSHOP: LIVE LEADERBOARD", "Ranked by Score • Tie-broken by Lowest Time", badge="LEADERBOARD", color=Colors.BRIGHT_MAGENTA)
+    print_banner("FOSS MEC: LIVE WORKSHOP LEADERBOARD", "Ranked by Score • Tie-broken by Lowest Time", badge="LEADERBOARD", color=Colors.BRIGHT_MAGENTA)
     
-    entries = get_leaderboard(limit=15)
+    entries = get_leaderboard(limit=25)
     print(f"{'RANK':<6} {'NAME':<24} {'CLASS/BATCH':<16} {'SCORE':<10} {'TIME':<8}")
     print(f"{'─' * 68}")
     
     user_rank = "-"
     for idx, e in enumerate(entries, 1):
-        is_user = (e.get("name") == state.name and e.get("class_name") == state.class_name)
+        is_user = (e.get("name", "").strip().lower() == state.name.strip().lower() and 
+                   e.get("class_name", "").strip().lower() == state.class_name.strip().lower())
         time_str = format_seconds(e.get("total_time", 0.0))
         if is_user:
             user_rank = idx
@@ -133,7 +162,7 @@ def run_terminal_game(state):
     
     while True:
         clear_screen()
-        print_banner("GIT WORKSHOP ARENA: DAY 2", "Hands-on Laptop Games & Challenges", badge="GAME ARENA", color=Colors.CYAN)
+        print_banner("FOSS MEC: GIT WORKSHOP ARENA", "Hands-on Laptop Games & Challenges", badge="GAME ARENA", color=Colors.CYAN)
         print_player_hud(state)
         
         options = []
@@ -153,7 +182,7 @@ def run_terminal_game(state):
             print(f"\n{Colors.CYAN}Thanks for playing, {state.name}! See you on GitHub! 🚀{Colors.RESET}\n")
             break
         elif choice == 0:
-            # Stage 1: Git Bingo (Stops immediately on Bingo!)
+            # Stage 1: Git Bingo
             pts, elapsed, won = run_bingo()
             if pts or elapsed:
                 new_score, is_first, bonus = state.add_game_result(1, pts, elapsed, is_completion=won)
@@ -214,26 +243,37 @@ def run_terminal_game(state):
             unlock_stage_dialog(state)
 
 
-def launch_web_ui(state):
-    """Launch zero-dependency local web game interface."""
-    server, port = start_game_server(state, port=5000)
-    
+def launch_web_ui(target_hub_url=None):
+    """Launch the Web Game Interface."""
+    # If an organizer hub was found or specified on the Wi-Fi network:
+    if target_hub_url:
+        print_banner("FOSS MEC: CONNECTING TO WORKSHOP HUB", f"Hub: {target_hub_url}", badge="CONNECTED", color=Colors.BRIGHT_GREEN)
+        print(f"Opening browser at: {target_hub_url} ...")
+        try:
+            webbrowser.open(target_hub_url)
+        except Exception:
+            pass
+        print("\nPress Ctrl+C when finished.")
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            return
+
+    # Otherwise, run local standalone server
+    server, port = start_hub_server(port=5000, start_beacon=False)
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
     
     url = f"http://localhost:{port}"
     clear_screen()
-    print_banner("⚡ GIT WORKSHOP ARENA: GAME INTERFACE LAUNCHED ⚡", "Interactive Web Game Suite | Zero Dependencies", badge="ACTIVE", color=Colors.BRIGHT_CYAN)
+    print_banner("FOSS MEC: GIT ARENA LAUNCHED", "Standalone / Local Mode | Zero Dependencies", badge="ACTIVE", color=Colors.BRIGHT_CYAN)
     
     msg = (
-        f"Game interface is running locally on your laptop:\n\n"
+        f"Game interface is running locally:\n\n"
         f"  👉 URL: {Colors.BOLD}{Colors.BRIGHT_GREEN}{url}{Colors.RESET}\n\n"
         f"Opening in your web browser automatically...\n"
-        f"(If your browser does not open automatically, copy and paste the URL above into Chrome, Edge, or Firefox).\n\n"
         f"• Welcome Screen will ask for your Name and Class.\n"
-        f"• Live Timer records how fast you complete each challenge.\n"
-        f"• Git Bingo stops immediately when you get 3 in a line!\n"
-        f"• ⚡ First Finisher in every game receives a +100 Point Bonus!\n"
         f"• Stage 2 will unlock as soon as the organizer opens the round!\n\n"
         f"{Colors.DIM}Press Ctrl+C in this terminal when you want to stop the game.{Colors.RESET}"
     )
@@ -253,11 +293,14 @@ def launch_web_ui(state):
 
 
 def main():
-    state = PlayerState()
+    hub_url = detect_or_ask_hub()
+    state = PlayerState(hub_url=hub_url)
+    
     if "--cli" in sys.argv or "-c" in sys.argv:
         run_terminal_game(state)
         return
-    launch_web_ui(state)
+        
+    launch_web_ui(target_hub_url=hub_url)
 
 
 if __name__ == "__main__":

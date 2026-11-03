@@ -1,0 +1,457 @@
+[
+  {
+    "id": "q1",
+    "topic": "Core Fundamentals",
+    "question": "What is the primary architectural difference between Git and GitHub?",
+    "options": [
+      "Git is a local distributed version control software; GitHub is a cloud hosting platform for Git repositories.",
+      "Git is for writing code; GitHub is for compiling code.",
+      "Git is only for Linux; GitHub is for Windows and macOS.",
+      "There is no difference; they are different branding of the exact same program."
+    ],
+    "correct_index": 0,
+    "explanation": "Git is the distributed version control tool that records file snapshots locally on your machine. GitHub is a cloud-based service that hosts Git repositories online and provides collaboration tools like Pull Requests and issue trackers."
+  },
+  {
+    "id": "q2",
+    "topic": "Repository Initialization",
+    "question": "What happens under the hood when you run 'git init' inside a project directory?",
+    "options": [
+      "It creates a hidden '.git' directory containing repository metadata, object database, and config.",
+      "It automatically uploads your code to GitHub.",
+      "It deletes all untracked files in the folder.",
+      "It creates a git.exe binary in the current folder."
+    ],
+    "correct_index": 0,
+    "explanation": "'git init' creates a hidden '.git' folder in your directory. This folder stores all commit history, Git configuration, hooks, and object databases."
+  },
+  {
+    "id": "q3",
+    "topic": "Staging Area",
+    "question": "What are the three core areas or trees of a local Git project?",
+    "options": [
+      "Working Directory, Staging Area (Index), and Repository (HEAD commit history)",
+      "HTML, CSS, and JavaScript",
+      "Local Drive, USB Drive, and Cloud Backup",
+      "Master, Main, and Origin"
+    ],
+    "correct_index": 0,
+    "explanation": "Git manages files across three areas: the Working Directory (untracked/modified files on disk), the Staging Area / Index (prepared snapshot), and the Repository (.git history storing permanent commits)."
+  },
+  {
+    "id": "q4",
+    "topic": "Staging Area",
+    "question": "You modified README.md and ran 'git commit -m \"Fix docs\"', but Git said 'no changes added to commit'. Why?",
+    "options": [
+      "The modified file was not staged with 'git add README.md' before committing.",
+      "You cannot commit files with a .md extension.",
+      "Git requires you to push before you can commit.",
+      "The commit message must be at least 50 characters."
+    ],
+    "correct_index": 0,
+    "explanation": "Git requires changes to be explicitly moved from the working directory into the staging area using 'git add' before 'git commit' can record them in a new snapshot."
+  },
+  {
+    "id": "q5",
+    "topic": "Inspection & Status",
+    "question": "Which command displays the current branch name, uncommitted changes, staged files, and untracked files?",
+    "options": [
+      "git status",
+      "git log",
+      "git branch --check",
+      "git show"
+    ],
+    "correct_index": 0,
+    "explanation": "'git status' gives a comprehensive status report of your active branch, staged files (green), unstaged modifications (red), and untracked files."
+  },
+  {
+    "id": "q6",
+    "topic": "Branching",
+    "question": "What is a Git branch conceptually?",
+    "options": [
+      "A lightweight, movable pointer to a specific commit snapshot.",
+      "A completely duplicated folder copy of your entire hard drive.",
+      "A remote cloud server hosted by Microsoft.",
+      "A zip file generated at every commit."
+    ],
+    "correct_index": 0,
+    "explanation": "In Git, a branch is simply a lightweight movable pointer (a 41-byte text file containing a 40-character commit SHA-1 hash) pointing to the latest commit of that line of development."
+  },
+  {
+    "id": "q7",
+    "topic": "Branching",
+    "question": "What is the recommended modern Git command to create a branch named 'feature-auth' and switch to it in one step?",
+    "options": [
+      "git switch -c feature-auth",
+      "git branch -make feature-auth",
+      "git goto feature-auth",
+      "git merge -c feature-auth"
+    ],
+    "correct_index": 0,
+    "explanation": "'git switch -c <branch-name>' was introduced in Git 2.23 to cleanly separate branch switching from file restoration. (The older equivalent is 'git checkout -b <branch-name>')."
+  },
+  {
+    "id": "q8",
+    "topic": "Branching",
+    "question": "Why should developers create feature branches instead of committing directly to 'main'?",
+    "options": [
+      "To isolate unfinished work so the production 'main' branch remains stable and deployable.",
+      "Because Git will crash if you make more than 5 commits on main.",
+      "Because GitHub charges money for commits made directly on main.",
+      "Branches make your computer run faster."
+    ],
+    "correct_index": 0,
+    "explanation": "Branching isolates experimental or in-progress features. If something breaks on a feature branch, 'main' remains healthy, tested, and releasable."
+  },
+  {
+    "id": "q9",
+    "topic": "Merging",
+    "question": "What is a 'Fast-Forward' merge in Git?",
+    "options": [
+      "A merge where main simply moves its pointer forward because no divergent commits were made on main.",
+      "A merge that skips code reviews and unit tests.",
+      "A merge performed over 5G internet.",
+      "A merge that automatically resolves all merge conflicts without human input."
+    ],
+    "correct_index": 0,
+    "explanation": "A fast-forward merge occurs when there is a linear path from the target branch to the feature branch. Git simply moves the branch pointer forward without needing a merge commit."
+  },
+  {
+    "id": "q10",
+    "topic": "Merging",
+    "question": "What happens when you run 'git merge feature' while checked out on 'main', and divergent commits exist on both branches?",
+    "options": [
+      "Git performs a 3-way merge and creates a new 'Merge commit' uniting the two histories.",
+      "Git automatically deletes the feature branch without warning.",
+      "Git deletes all commits made on main.",
+      "Git converts the repository into a Subversion repository."
+    ],
+    "correct_index": 0,
+    "explanation": "When histories diverge, Git uses the common ancestor and the two branch tips to perform a 3-way merge, creating a new merge commit with two parent commits."
+  },
+  {
+    "id": "q11",
+    "topic": "Merge Conflicts",
+    "question": "What primarily causes a merge conflict in Git?",
+    "options": [
+      "When two branches modify the exact same lines of a file differently, and Git cannot automatically decide which version to keep.",
+      "When two teammates have the same first name.",
+      "When the repository exceeds 100 megabytes.",
+      "When you commit without internet access."
+    ],
+    "correct_index": 0,
+    "explanation": "A merge conflict occurs when opposing changes are made to the same lines of a file, or one branch deletes a file that another branch modified. Git halts and asks a human to resolve the ambiguity."
+  },
+  {
+    "id": "q12",
+    "topic": "Merge Conflicts",
+    "question": "In a conflicted file, what does the marker '<<<<<<< HEAD' indicate?",
+    "options": [
+      "The start of the changes from the branch you are currently checked out on.",
+      "A syntax error in your programming language compiler.",
+      "The end of the conflict section.",
+      "Code written by a GitHub administrator."
+    ],
+    "correct_index": 0,
+    "explanation": "'<<<<<<< HEAD' marks the beginning of the version on your currently checked-out branch. The '=======' separates your version from the incoming branch's version ('>>>>>>> branch-name')."
+  },
+  {
+    "id": "q13",
+    "topic": "Merge Conflicts",
+    "question": "After manually editing a conflicted file to keep the desired code and removing conflict markers, what must you run to finalize the merge?",
+    "options": [
+      "git add <file> followed by git commit",
+      "git cancel-conflict",
+      "git checkout --force",
+      "git clean -fdx"
+    ],
+    "correct_index": 0,
+    "explanation": "Once conflict markers are resolved, you stage the resolved file with 'git add <file>' and run 'git commit' (or 'git merge --continue') to record the completed merge commit."
+  },
+  {
+    "id": "q14",
+    "topic": "Pull Requests",
+    "question": "What is a Pull Request (PR) on GitHub or GitLab?",
+    "options": [
+      "A formal proposal to review, discuss, and merge code changes from a branch into a target branch.",
+      "A request to download git.exe onto your laptop.",
+      "A command that downloads all files as a ZIP archive.",
+      "A notification sent to delete a repository."
+    ],
+    "correct_index": 0,
+    "explanation": "A Pull Request (or Merge Request) is a collaborative review workflow where team members view diffs, leave inline comments, run automated CI checks, and approve changes before merging."
+  },
+  {
+    "id": "q15",
+    "topic": "Pull Requests",
+    "question": "What is the difference between 'git clone' and 'Forking' on GitHub?",
+    "options": [
+      "Cloning copies a repo to your local computer; Forking creates an independent server-side copy under your GitHub account.",
+      "Cloning is for open-source; Forking is only for private code.",
+      "Cloning deletes the original repository; Forking duplicates it.",
+      "There is no difference; they are aliases for the same operation."
+    ],
+    "correct_index": 0,
+    "explanation": "Forking creates an online copy of someone else's repository under your GitHub account so you can propose PRs without write access. Cloning downloads a repository from the web onto your local machine."
+  },
+  {
+    "id": "q16",
+    "topic": "Remote Operations",
+    "question": "What does the '-u' (or '--set-upstream') flag do in 'git push -u origin feature'?",
+    "options": [
+      "It links your local 'feature' branch to 'origin/feature' so future 'git push' and 'git pull' know where to sync.",
+      "It forces the push even if it causes data loss.",
+      "It unzips files on GitHub.",
+      "It creates an urgent high-priority commit."
+    ],
+    "correct_index": 0,
+    "explanation": "The '-u' flag configures upstream tracking. Once configured, Git knows which remote branch corresponds to your local branch, allowing you to just type 'git push' or 'git pull'."
+  },
+  {
+    "id": "q17",
+    "topic": "Remote Operations",
+    "question": "What is the key difference between 'git fetch' and 'git pull'?",
+    "options": [
+      "'git fetch' downloads new remote commits without merging them into your branch; 'git pull' runs fetch AND merges them immediately.",
+      "'git fetch' is for uploading; 'git pull' is for downloading.",
+      "'git fetch' only works for README files; 'git pull' works for code.",
+      "'git fetch' deletes local branches that don't match GitHub."
+    ],
+    "correct_index": 0,
+    "explanation": "'git fetch' safely downloads remote commits, updating remote tracking branches (like origin/main) without touching your working files. 'git pull' performs 'git fetch' + 'git merge' in one go."
+  },
+  {
+    "id": "q18",
+    "topic": "Remote Operations",
+    "question": "You try to run 'git push' and receive '[rejected - non-fast-forward]'. What is the most common reason?",
+    "options": [
+      "The remote branch has newer commits made by teammates that you have not pulled yet.",
+      "Your laptop battery is below 20%.",
+      "Git does not allow commits with emojis.",
+      "The file names contain spaces."
+    ],
+    "correct_index": 0,
+    "explanation": "A non-fast-forward rejection happens when GitHub has commits that do not exist in your local branch. To fix it, run 'git pull' to integrate remote changes first, then push."
+  },
+  {
+    "id": "q19",
+    "topic": "Undoing Changes",
+    "question": "You made unintended changes in 'app.js' that you have NOT staged yet. How do you discard them and restore the last committed version?",
+    "options": [
+      "git restore app.js",
+      "git delete app.js",
+      "git uncommit app.js",
+      "git remove app.js"
+    ],
+    "correct_index": 0,
+    "explanation": "In modern Git, 'git restore <file>' discards uncommitted changes in the working tree, reverting the file back to the last committed state."
+  },
+  {
+    "id": "q20",
+    "topic": "Undoing Changes",
+    "question": "You ran 'git add secret.env' by mistake. Which command un-stages it without deleting your local changes?",
+    "options": [
+      "git restore --staged secret.env",
+      "git rm secret.env",
+      "git erase secret.env",
+      "git branch -d secret.env"
+    ],
+    "correct_index": 0,
+    "explanation": "'git restore --staged <file>' (or older 'git reset HEAD <file>') removes the file from the staging area while leaving your file contents untouched in your working directory."
+  },
+  {
+    "id": "q21",
+    "topic": "Stashing",
+    "question": "You are halfway through a feature, but your team needs an urgent hotfix on 'main'. How do you temporarily shelve your uncommitted work without committing junk?",
+    "options": [
+      "git stash",
+      "git pause",
+      "git sleep",
+      "git hide"
+    ],
+    "correct_index": 0,
+    "explanation": "'git stash' takes your dirty working tree and staged changes and saves them onto a temporary stack, giving you a clean working directory. Later, run 'git stash pop' to restore your work."
+  },
+  {
+    "id": "q22",
+    "topic": "Stashing",
+    "question": "Which command retrieves and reapplies your most recently stashed changes onto your current branch?",
+    "options": [
+      "git stash pop",
+      "git stash restore-all",
+      "git unstash",
+      "git stash paste"
+    ],
+    "correct_index": 0,
+    "explanation": "'git stash pop' applies the top stash to your working directory and removes it from your stash stack list."
+  },
+  {
+    "id": "q23",
+    "topic": "Inspection & History",
+    "question": "Which command displays a compact, single-line-per-commit visual ASCII graph of project branch history?",
+    "options": [
+      "git log --oneline --graph --all",
+      "git tree --view",
+      "git branch --ascii",
+      "git diagram"
+    ],
+    "correct_index": 0,
+    "explanation": "'git log --oneline --graph --all' renders a clean text-based graph showing branch divergence, commits, and merge points across the entire repository."
+  },
+  {
+    "id": "q24",
+    "topic": "Inspection & History",
+    "question": "What does 'git diff' (without any flags) show you?",
+    "options": [
+      "The exact line-by-line differences between your working directory and the staging area.",
+      "The differences between GitHub and your local drive.",
+      "The files deleted in the last 10 days.",
+      "The differences between two different users."
+    ],
+    "correct_index": 0,
+    "explanation": "'git diff' inspects unstaged modifications—showing what you have changed in your files but not yet staged with 'git add'."
+  },
+  {
+    "id": "q25",
+    "topic": "Git Configuration",
+    "question": "What is the purpose of a '.gitignore' file?",
+    "options": [
+      "To tell Git which files, folders, build artifacts, or secret keys to deliberately exclude from tracking.",
+      "To ignore compiler warnings in your code.",
+      "To ignore pull requests from specific users.",
+      "To block unauthorized internet access to your machine."
+    ],
+    "correct_index": 0,
+    "explanation": "A '.gitignore' text file patterns files and directories (like node_modules, .env, *.log, build/) that Git should never track or prompt you to commit."
+  },
+  {
+    "id": "q26",
+    "topic": "Git Configuration",
+    "question": "What is the purpose of setting 'git config --global user.name' and 'user.email'?",
+    "options": [
+      "To attribute authorship and identity to every commit you make in Git.",
+      "To create your GitHub password.",
+      "To register your laptop with the Linux foundation.",
+      "To license your open-source software under MIT."
+    ],
+    "correct_index": 0,
+    "explanation": "Every commit in Git permanently stores the author's name and email address. Configuring these ensures your commits are properly attributed to you on GitHub."
+  },
+  {
+    "id": "q27",
+    "topic": "Git Internals",
+    "question": "What is HEAD in Git?",
+    "options": [
+      "A special symbolic reference pointing to the currently checked-out commit or branch tip.",
+      "The very first commit ever made in the project.",
+      "The GitHub server's CPU processor.",
+      "The top line of a README.md file."
+    ],
+    "correct_index": 0,
+    "explanation": "HEAD is a pointer that determines what commit or branch is currently active in your working directory. Normally HEAD points to a branch name, which in turn points to a commit."
+  },
+  {
+    "id": "q28",
+    "topic": "Git Internals",
+    "question": "What does it mean when Git displays the message 'You are in 'detached HEAD' state'?",
+    "options": [
+      "HEAD is pointing directly to a specific commit hash rather than a named branch.",
+      "Your Git installation is corrupted and must be reinstalled.",
+      "The remote repository on GitHub has been deleted.",
+      "Git has stopped tracking files on your laptop."
+    ],
+    "correct_index": 0,
+    "explanation": "Detached HEAD occurs when you checkout a specific commit hash or tag instead of a branch. If you make new commits in this state, they won't belong to any branch unless you create one (e.g., 'git switch -c new-branch')."
+  },
+  {
+    "id": "q29",
+    "topic": "Remotes & Aliases",
+    "question": "In Git remote commands, what does the word 'origin' represent by convention?",
+    "options": [
+      "The default nickname/alias for the remote repository URL that was cloned or linked.",
+      "The computer manufacturer where the code originated.",
+      "The root directory of your hard drive (/ or C:\\).",
+      "The main software license file."
+    ],
+    "correct_index": 0,
+    "explanation": "'origin' is simply the standard default alias given to the remote repository URL when you clone a repository or link one with 'git remote add origin <url>'."
+  },
+  {
+    "id": "q30",
+    "topic": "Best Practices",
+    "question": "Which of the following is considered a best practice for Git commit messages?",
+    "options": [
+      "Write a concise, imperative summary (e.g. 'Add search filter to products API') explaining what the commit does.",
+      "Commit 2,000 files at once with message 'stuff' or 'fixes'.",
+      "Always leave the commit message blank so coworkers can inspect the diff.",
+      "Copy and paste the entire source file contents into the message."
+    ],
+    "correct_index": 0,
+    "explanation": "Good commit messages explain why a change was made in a clear, imperative tone (e.g., 'Fix memory leak in image loader'). This helps team members and future contributors understand project history."
+  },
+  {
+    "id": "q31",
+    "topic": "Undoing Changes",
+    "question": "What is the primary difference between 'git reset --hard' and 'git revert'?",
+    "options": [
+      "'git reset --hard' rewrites history by moving the branch pointer back and deleting changes; 'git revert' creates a new commit that safely inverts the changes.",
+      "'git reset' is only for text files; 'git revert' is only for images.",
+      "'git revert' deletes the entire repository.",
+      "They are identical commands with different spelling."
+    ],
+    "correct_index": 0,
+    "explanation": "'git reset --hard' rewrites commit history (dangerous for shared public branches). 'git revert' safely undoes changes by appending a brand new commit that cancels out the previous commit's diff."
+  },
+  {
+    "id": "q32",
+    "topic": "Branching & Deletion",
+    "question": "After your feature branch has been reviewed and merged into main, how do you safely delete the local branch?",
+    "options": [
+      "git branch -d feature-branch",
+      "git delete branch feature-branch",
+      "git rm feature-branch",
+      "git erase -b feature-branch"
+    ],
+    "correct_index": 0,
+    "explanation": "'git branch -d <branch>' safely deletes a local branch. If the branch contains unmerged changes, Git will protect you by requiring an uppercase '-D' to force deletion."
+  },
+  {
+    "id": "q33",
+    "topic": "Remote Operations",
+    "question": "Which command removes a remote tracking reference locally if a branch was deleted on GitHub?",
+    "options": [
+      "git fetch --prune",
+      "git clean -fd",
+      "git delete-orphans",
+      "git remote --scrub"
+    ],
+    "correct_index": 0,
+    "explanation": "'git fetch --prune' (or 'git fetch -p') contacts the remote and cleans up stale local tracking references for branches that no longer exist on GitHub."
+  },
+  {
+    "id": "q34",
+    "topic": "Pull Requests",
+    "question": "What does 'Squash and Merge' do when accepting a Pull Request on GitHub?",
+    "options": [
+      "Combines all commits from the feature branch into a single clean commit on the target branch.",
+      "Deletes all images in the pull request to save bandwidth.",
+      "Merges code while skipping CI tests.",
+      "Compresses the files into a .tar.gz archive."
+    ],
+    "correct_index": 0,
+    "explanation": "Squash merging condenses all the minor 'work in progress' commits from a feature branch into one clean, unified commit before adding it to main, keeping the main log tidy."
+  },
+  {
+    "id": "q35",
+    "topic": "Core Fundamentals",
+    "question": "What algorithm does Git use to generate its 40-character commit hashes?",
+    "options": [
+      "SHA-1 (with newer versions supporting SHA-256)",
+      "MD5",
+      "AES-256",
+      "RSA"
+    ],
+    "correct_index": 0,
+    "explanation": "Git uses cryptographic hashing (historically SHA-1, with modern transition to SHA-256) to produce unique 40-character checksums that represent commits, trees, and blobs based on their exact contents."
+  }
+]

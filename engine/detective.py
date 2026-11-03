@@ -1,26 +1,28 @@
 """
 detective.py - Activity B: Git Detective
-Terminal scenario problem-solving cases with timer tracking.
+Terminal scenario problem-solving cases with timer tracking and randomized case selection.
 """
 
 import os
 import json
 import time
+import random
 from engine.ui import (
     Colors, clear_screen, pause, print_banner,
     print_terminal_sim, print_box, ask_choice
 )
 from engine.state import format_seconds
 
-def load_detective_cases():
+def load_detective_cases(count=6):
     content_dir = os.path.join(os.path.dirname(__file__), "content")
     path = os.path.join(content_dir, "detective_cases.json")
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        cases = json.load(f)
+    return random.sample(cases, min(count, len(cases)))
 
 class GitDetectiveGame:
-    def __init__(self, cases=None):
-        self.cases = cases or load_detective_cases()
+    def __init__(self, cases=None, count=6):
+        self.cases = cases or load_detective_cases(count=count)
         self.score = 0
         self.total_points = len(self.cases) * 20
         self.start_time = None
@@ -30,7 +32,7 @@ class GitDetectiveGame:
         clear_screen()
         print_banner("GIT DETECTIVE: TERMINAL MYSTERIES", "Analyze problem scenarios & identify the right fix", badge="ACTIVITY B")
         print(f"{Colors.WHITE}Welcome, Git Detective!{Colors.RESET}")
-        print("Your job: inspect the terminal output, diagnose the issue, and pick the exact right fix.")
+        print(f"You will investigate {len(self.cases)} randomized terminal crime scenes (conflicts, detached branches, etc.).")
         print("Your time is tracked! Solve the cases quickly for leaderboard ranking.\n")
         pause("Press Enter to START TIMER & begin the investigation...")
 
@@ -70,6 +72,6 @@ class GitDetectiveGame:
         pause()
         return self.score, self.elapsed_time, True
 
-def run_detective():
-    game = GitDetectiveGame()
+def run_detective(count=6):
+    game = GitDetectiveGame(count=count)
     return game.play()

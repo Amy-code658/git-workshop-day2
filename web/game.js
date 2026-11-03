@@ -1,10 +1,9 @@
 /* ==========================================================================
-   Git Workshop Day 2: Terminal Games Suite - Frontend Engine
-   Vanilla JS (No external libraries or CDNs)
-   Features: Stop-on-Bingo, Unique Cards, Live Game Timers, First-Finisher Bonuses
+   FOSS MEC — Git Workshop Day 2: Terminal Games Suite
+   Frontend Engine with Live Network Sync & Real-time Room Leaderboard
    ========================================================================== */
 
-// Web Audio API Synthesizer
+// Web Audio API Synthesizer (Zero sound files needed!)
 const AudioFX = {
   ctx: null,
   init() {
@@ -43,6 +42,11 @@ const AudioFX = {
       this.playTone(freq, 'triangle', 0.25, idx * 0.1);
     });
   },
+  stageUnlocked() {
+    [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+      this.playTone(freq, 'sine', 0.2, idx * 0.09);
+    });
+  },
   firstPlace() {
     [587.33, 739.99, 880.0, 1174.66].forEach((freq, idx) => {
       this.playTone(freq, 'square', 0.3, idx * 0.12);
@@ -51,8 +55,8 @@ const AudioFX = {
 };
 
 let currentProfile = {
-  name: '',
-  class_name: '',
+  name: localStorage.getItem('foss_player_name') || '',
+  class_name: localStorage.getItem('foss_player_class') || '',
   score: 0,
   total_time: 0.0,
   formatted_time: '00:00',
@@ -116,21 +120,33 @@ function stopRoundTimer() {
 // Profile & Initialization
 // --------------------------------------------------------------------------
 async function initProfile() {
-  try {
-    const res = await fetch('/api/profile');
-    const data = await res.json();
-    currentProfile = data;
-    
-    if (data.name && data.class_name) {
-      document.getElementById('welcomeOverlay').style.display = 'none';
-      updateHud();
-    } else {
-      document.getElementById('welcomeOverlay').style.display = 'flex';
-    }
-    updateMissionsUI(data.unlocked_stages || [1]);
-  } catch (err) {
-    console.error('Failed to load profile:', err);
+  if (currentProfile.name && currentProfile.class_name) {
+    document.getElementById('welcomeOverlay').style.display = 'none';
+    updateHud();
+    // Re-register on hub
+    try {
+      await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: currentProfile.name,
+          class_name: currentProfile.class_name
+        })
+      });
+    } catch (e) {}
+  } else {
+    document.getElementById('welcomeOverlay').style.display = 'flex';
   }
+
+  // Fetch initial status
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    if (data.unlocked) {
+      currentProfile.unlocked_stages = data.unlocked;
+      updateMissionsUI(data.unlocked);
+    }
+  } catch (e) {}
 }
 
 function updateHud() {
@@ -151,6 +167,11 @@ function setupEventListeners() {
       const className = document.getElementById('playerClass').value.trim();
       if (!name || !className) return;
 
+      currentProfile.name = name;
+      currentProfile.class_name = className;
+      localStorage.setItem('foss_player_name', name);
+      localStorage.setItem('foss_player_class', className);
+
       try {
         const res = await fetch('/api/register', {
           method: 'POST',
@@ -158,21 +179,28 @@ function setupEventListeners() {
           body: JSON.stringify({ name, class_name: className })
         });
         const data = await res.json();
-        currentProfile = data;
         document.getElementById('welcomeOverlay').style.display = 'none';
         updateHud();
         fetchLeaderboard();
       } catch (err) {
-        alert('Error saving registration.');
+        alert('Error connecting to workshop hub.');
       }
     });
   }
 }
 
 // --------------------------------------------------------------------------
-// Stage Unlocking & Polling
+// Stage Unlocking & Live Polling
 // --------------------------------------------------------------------------
+let previousUnlockedCount = 1;
+
 function updateMissionsUI(unlockedList) {
+  // Check if a new stage was unlocked by organizer!
+  if (unlockedList.length > previousUnlockedCount) {
+    previousUnlockedCount = unlockedList.length;
+    AudioFX.stageUnlocked();
+  }
+
   for (let stage = 1; stage <= 5; stage++) {
     const card = document.getElementById(`cardStage${stage}`);
     const action = document.getElementById(`actionStage${stage}`);
@@ -235,7 +263,7 @@ async function submitPasscode() {
       msgEl.textContent = '✘ ' + result.message;
     }
   } catch (err) {
-    msgEl.textContent = 'Error connecting to server.';
+    msgEl.textContent = 'Error connecting to hub.';
   }
 }
 
@@ -243,15 +271,17 @@ function startPolling() {
   fetchLeaderboard();
   setInterval(async () => {
     try {
+      // 1. Check stage status from organizer
       const statusRes = await fetch('/api/status');
       const statusData = await statusRes.json();
       if (statusData.unlocked) {
         currentProfile.unlocked_stages = statusData.unlocked;
         updateMissionsUI(statusData.unlocked);
       }
+      // 2. Refresh room leaderboard
       fetchLeaderboard();
     } catch (e) {}
-  }, 3000);
+  }, 2000);
 }
 
 async function fetchLeaderboard() {
@@ -265,8 +295,15 @@ async function fetchLeaderboard() {
     let foundUserRank = '-';
 
     list.forEach((item, index) => {
-      const isCurrent = (item.name === currentProfile.name && item.class_name === currentProfile.class_name);
-      if (isCurrent) foundUserRank = index + 1;
+      const isCurrent = (item.name.toLowerCase() === currentProfile.name.toLowerCase() &&
+                         item.class_name.toLowerCase() === currentProfile.class_name.toLowerCase());
+      if (isCurrent) {
+        foundUserRank = index + 1;
+        currentProfile.score = item.score;
+        currentProfile.total_time = item.total_time;
+        currentProfile.formatted_time = item.formatted_time || formatSeconds(item.total_time);
+        updateHud();
+      }
 
       const li = document.createElement('li');
       li.className = `leaderboard-item ${isCurrent ? 'current-user' : ''}`;
@@ -299,6 +336,8 @@ async function addPoints(stageNum, points, timeTaken = 0.0, isCompletion = false
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        name: currentProfile.name,
+        class_name: currentProfile.class_name,
         stage: stageNum,
         points: points,
         time_taken: timeTaken,
@@ -312,7 +351,6 @@ async function addPoints(stageNum, points, timeTaken = 0.0, isCompletion = false
     updateHud();
     fetchLeaderboard();
 
-    // Check if 1st finisher speed bonus was won!
     if (data.is_first && data.bonus_pts > 0) {
       AudioFX.firstPlace();
       showFirstPlaceCelebration(stageNum, data.bonus_pts);
@@ -321,7 +359,7 @@ async function addPoints(stageNum, points, timeTaken = 0.0, isCompletion = false
 }
 
 function showFirstPlaceCelebration(stageNum, bonusPts) {
-  alert(`⚡⚡⚡ FIRST FINISHER SPEED BONUS! ⚡⚡⚡\nYou were the FIRST person to complete Stage ${stageNum}!\n+${bonusPts} BONUS POINTS added to your score!`);
+  alert(`⚡⚡⚡ FIRST FINISHER SPEED BONUS! ⚡⚡⚡\nYou were the FIRST person across the room to complete Stage ${stageNum}!\n+${bonusPts} BONUS POINTS awarded!`);
 }
 
 function closeModal(modalId) {
@@ -334,7 +372,7 @@ function escapeHtml(str) {
 }
 
 // --------------------------------------------------------------------------
-// 🎯 Activity 1: Git Bingo Game (STOP ON BINGO + UNIQUE CARDS)
+// 🎯 Activity 1: Git Bingo Game (STOP ON BINGO + UNIQUE 3x3 CARDS)
 // --------------------------------------------------------------------------
 async function openBingo() {
   AudioFX.init();
@@ -342,7 +380,7 @@ async function openBingo() {
   const allItems = await res.json();
   
   bingoOver = false;
-  // Unique random 3x3 card for this player
+  // Unique random 3x3 card sampled for this player
   const shuffledCard = [...allItems].sort(() => 0.5 - Math.random()).slice(0, 9);
   bingoGrid = shuffledCard.map(item => ({ ...item, marked: false }));
   
@@ -403,14 +441,14 @@ function onBingoCellClick(idx) {
         AudioFX.bingo();
         
         // Award points + Bingo 50 pts + completion flag (checks first finisher bonus)
-        addPoints(1, 70, elapsed, true); // 20 pts + 50 pts bingo
+        addPoints(1, 70, elapsed, true);
         
         renderBingoBoard();
         feedbackEl.innerHTML = `
           <div style="background: rgba(46,160,67,0.25); border: 2px solid #39d353; padding: 16px; border-radius: 8px; text-align: center; margin-top: 10px;">
             <h2 style="color: #39d353; margin-bottom: 6px;">🎉🎉🎉 BINGO ACHIEVED! 🎉🎉🎉</h2>
             <p style="font-size: 1.1rem; color: #fff;">You completed 3 in a line in <strong>${formatSeconds(elapsed)} (${elapsed}s)</strong>!</p>
-            <p style="color: #bc8cff; font-weight: bold; margin-top: 4px;">Game stops immediately! Points & time submitted to leaderboard.</p>
+            <p style="color: #bc8cff; font-weight: bold; margin-top: 4px;">Game stops immediately! Points & time submitted to live room leaderboard.</p>
             <button class="btn-primary" style="margin-top: 12px; max-width: 200px;" onclick="closeModal('bingoModal')">COLLECT & RETURN 🏆</button>
           </div>
         `;
@@ -448,11 +486,12 @@ function checkBingoWin() {
 }
 
 // --------------------------------------------------------------------------
-// 🕵️ Activity 2: Git Detective Game
+// 🕵️ Activity 2: Git Detective Game (RANDOMIZED CASES)
 // --------------------------------------------------------------------------
 async function openDetective() {
   AudioFX.init();
-  const res = await fetch('/api/detective/cases');
+  // Fetch random 6 cases from 12-case pool
+  const res = await fetch('/api/detective/cases?count=6');
   detectiveCases = await res.json();
   detectiveCaseIndex = 0;
   loadDetectiveCase();
@@ -588,7 +627,11 @@ async function runQuestVerification() {
     const res = await fetch('/api/quest/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo_path: repoPath, time_taken: elapsed })
+      body: JSON.stringify({
+        repo_path: repoPath,
+        name: currentProfile.name,
+        time_taken: elapsed
+      })
     });
     const data = await res.json();
     
@@ -623,16 +666,8 @@ async function runQuestVerification() {
 
     if (data.total_score > 0) {
       AudioFX.success();
-      currentProfile.score = data.score;
-      currentProfile.total_time = data.total_time;
-      currentProfile.formatted_time = data.formatted_time;
-      updateHud();
-      fetchLeaderboard();
-      
-      if (data.is_first && data.bonus_pts > 0) {
-        AudioFX.firstPlace();
-        showFirstPlaceCelebration(4, data.bonus_pts);
-      }
+      const isComplete = (data.total_score === 100);
+      addPoints(4, data.total_score, elapsed, isComplete);
     }
   } catch (err) {
     resArea.innerHTML = '<p style="color:#f85149;">Failed to inspect repository. Make sure the folder path is correct.</p>';
@@ -640,11 +675,12 @@ async function runQuestVerification() {
 }
 
 // --------------------------------------------------------------------------
-// ⚡ Activity 5: Final Showdown
+// ⚡ Activity 5: Final Showdown (35+ QUESTION BANK RANDOMIZATION)
 // --------------------------------------------------------------------------
 async function openShowdown() {
   AudioFX.init();
-  const res = await fetch('/api/showdown/questions');
+  // Fetch random 10 questions from the 35+ fact-checked question bank!
+  const res = await fetch('/api/showdown/questions?count=10');
   showdownQuestions = await res.json();
   showdownIndex = 0;
   showdownScore = 0;
@@ -669,7 +705,7 @@ function loadShowdownQuestion() {
   }
 
   const q = showdownQuestions[showdownIndex];
-  document.getElementById('showdownHeader').textContent = `⚡ FINAL SHOWDOWN: QUESTION ${showdownIndex + 1}/${showdownQuestions.length}`;
+  document.getElementById('showdownHeader').textContent = `⚡ FINAL SHOWDOWN: QUESTION ${showdownIndex + 1}/${showdownQuestions.length} (${q.topic})`;
   document.getElementById('showdownQuestionText').textContent = q.question;
   document.getElementById('showdownFeedback').innerHTML = '';
 
@@ -695,7 +731,7 @@ function selectShowdownOption(idx) {
     addPoints(5, 10, elapsed, isLast);
 
     fb.innerHTML = `
-      <div style="color:#39d353; font-weight:bold; margin-bottom:10px;">✔ CORRECT! (+10 pts)</div>
+      <div style="color:#39d353; font-weight:bold; margin-bottom:10px;">✔ CORRECT! (+10 pts)<br><small style="color:#8b949e;">${escapeHtml(q.explanation)}</small></div>
       <button class="btn-play" onclick="nextShowdownQuestion()">${isLast ? 'SEE RESULTS ➔' : 'NEXT QUESTION ➔'}</button>
     `;
   } else {
@@ -703,7 +739,7 @@ function selectShowdownOption(idx) {
     const isLast = (showdownIndex === showdownQuestions.length - 1);
     if (isLast) stopRoundTimer();
     fb.innerHTML = `
-      <div style="color:#f85149; font-weight:bold; margin-bottom:10px;">✘ INCORRECT. Correct answer: ${escapeHtml(q.options[q.correct_index])}</div>
+      <div style="color:#f85149; font-weight:bold; margin-bottom:10px;">✘ INCORRECT. Correct answer: ${escapeHtml(q.options[q.correct_index])}<br><small style="color:#8b949e;">${escapeHtml(q.explanation)}</small></div>
       <button class="btn-play" onclick="nextShowdownQuestion()">${isLast ? 'SEE RESULTS ➔' : 'CONTINUE ➔'}</button>
     `;
   }
