@@ -316,21 +316,28 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 total_score = validator.total_score
                 results = validator.results
             else:
-                # Web Mode / GitHub URL self-certification
-                # Checks if valid github link or manual tasks
-                task_flags = [True, True, True, True, True, True, True]
-                total_score = 100
+                task_flags = [False] * 7
+                total_score = 0
                 results = [
-                    {"num": 1, "title": "Check repository status", "passed": True, "awarded": 10, "points": 10, "details": "Repository initialized and verified."},
-                    {"num": 2, "title": "Create a branch", "passed": True, "awarded": 10, "points": 10, "details": "Branch created and switched."},
-                    {"num": 3, "title": "Edit a file (README.md)", "passed": True, "awarded": 10, "points": 10, "details": "README.md created and edited."},
-                    {"num": 4, "title": "Stage and commit", "passed": True, "awarded": 15, "points": 15, "details": "Changes staged and committed with message."},
-                    {"num": 5, "title": "Push the branch to GitHub", "passed": True, "awarded": 15, "points": 15, "details": "Branch pushed upstream to GitHub."},
-                    {"num": 6, "title": "Open a pull request", "passed": True, "awarded": 20, "points": 20, "details": f"PR confirmed ({github_url or 'GitHub link verified'})."},
-                    {"num": 7, "title": "Review the change", "passed": True, "awarded": 20, "points": 20, "details": "PR reviewed and merged."}
+                    {
+                        "num": i,
+                        "title": title,
+                        "passed": False,
+                        "awarded": 0,
+                        "points": points,
+                        "details": "Git repository verification required."
+                    }
+                    for i, (title, points) in enumerate([
+                        ("Check repository status", 10),
+                        ("Create a branch", 10),
+                        ("Edit a file (README.md)", 10),
+                        ("Stage and commit", 15),
+                        ("Push the branch to GitHub", 15),
+                        ("Open a pull request", 20),
+                        ("Review the change", 20)
+                    ], start=1)
                 ]
-
-            token = generate_verification_token(name, total_score, task_flags)
+                token = generate_verification_token(name, total_score, task_flags)
             
             self.send_json({
                 "success": True,
@@ -378,8 +385,8 @@ def discover_hub_ip(timeout=0.8):
     return None
 
 
-def start_hub_server(port=None, start_beacon=True):
-    # Enable address reuse so restarts never fail with Address already in use
+
+    # def start_hub_server(port=None, start_beacon=True):Enable address reuse so restarts never fail with Address already in use
     socketserver.TCPServer.allow_reuse_address = True
 
     # Detect port from environment (e.g. Render, Railway, Heroku) or default to 5000
