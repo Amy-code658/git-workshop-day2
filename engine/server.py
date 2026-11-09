@@ -145,12 +145,20 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/register":
             name = body.get("name", "").strip()
             class_name = body.get("class_name", "").strip()
-            score = int(body.get("score", 0))
-            total_time = float(body.get("total_time", 0.0))
-            
+
+            try:
+                score = int(body.get("score", 0))
+                total_time = float(body.get("total_time", 0.0))
+            except (ValueError, TypeError):
+                self.send_json({
+                    "success": False,
+                    "error": "Score and time must be valid numbers."
+                })
+                return
+
             if name and class_name:
                 update_local_leaderboard(name, class_name, score, total_time)
-                
+
             self.send_json({
                 "success": True,
                 "name": name,
