@@ -92,7 +92,7 @@ def check_and_award_first_finisher(stage_num, player_name):
     """Check if player is the first person to finish this stage; awards 100 bonus pts."""
     st_key = str(stage_num)
     finishers = get_first_finishers()
-    
+
     if st_key not in finishers or not finishers[st_key]:
         finishers[st_key] = player_name.strip()
         try:
@@ -101,7 +101,7 @@ def check_and_award_first_finisher(stage_num, player_name):
         except Exception:
             pass
         return True, 100  # First finisher! +100 bonus points
-        
+
     return False, 0
 
 
@@ -147,44 +147,38 @@ class PlayerState:
 
         return stage_num in self.unlocked_stages
 
-    def unlock_stage(self, stage_num, password=None):
-        if stage_num in self.unlocked_stages:
-            return True, "Stage already unlocked."
-            
-        expected = STAGE_PASSWORDS.get(stage_num)
-        if password and expected and (password.strip().upper() == expected.upper() or password.strip().upper() == expected.replace("26", "").upper()):
-            if stage_num not in self.unlocked_stages:
-                self.unlocked_stages.append(stage_num)
-            self.save()
-            
-            # If hub url present, notify hub
-            if self.hub_url:
-                try:
-                    payload = json.dumps({"stage": stage_num, "password": password}).encode("utf-8")
-                    req = urllib.request.Request(
-                        f"{self.hub_url.rstrip('/')}/api/unlock",
-                        data=payload,
-                        headers={"Content-Type": "application/json"}
-                    )
-                    urllib.request.urlopen(req, timeout=1.5)
-                except Exception:
-                    pass
-            else:
-                # Update local workshop status
-                st = get_workshop_status()
-                unl = st.get("unlocked", [1])
-                if stage_num not in unl:
-                    unl.append(stage_num)
-                    set_workshop_status(unl)
-                    
-            return True, f"Stage {stage_num} ({STAGE_NAMES.get(stage_num)}) unlocked successfully!"
-            
-        return False, "Invalid unlock passcode. Please wait for the workshop organizer to reveal it on screen."
+def unlock_stage(self, stage_num, password=None):
+    if self.hub_url:
+        try:
+            req = urllib.request.Request(
+                f"{self.hub_url.rstrip('/')}/api/status",
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=3) as response:
+                status = json.loads(response.read().decode("utf-8"))
 
+            self.unlocked_stages = status.get("unlocked", [1])
+
+            if stage_num in self.unlocked_stages:
+                return True, "Stage unlocked by the organizer."
+
+            return False, "This stage is locked. Please wait for the organizer."
+
+        except Exception:
+            return False, "Cannot verify stage status. Please check the connection."
+
+    st = get_workshop_status()
+    unlocked = st.get("unlocked", [1])
+    self.unlocked_stages = unlocked
+
+    if stage_num in unlocked:
+        return True, "Stage unlocked by the organizer."
+
+    return False, "This stage is locked. Please wait for the organizer."
     def add_game_result(self, stage_num, points, time_taken=0.0, is_completion=False):
         """Add points and time taken for a game. Syncs to central hub."""
         st_key = str(stage_num)
-        
+
         # If hub url configured, sync with hub
         if self.hub_url:
             try:
@@ -214,15 +208,15 @@ class PlayerState:
         is_first = False
         if is_completion and self.is_registered():
             is_first, bonus_pts = check_and_award_first_finisher(stage_num, self.name)
-            
+
         total_pts = points + bonus_pts
         self.score += total_pts
         self.stage_scores[st_key] = self.stage_scores.get(st_key, 0) + total_pts
-        
+
         if time_taken > 0:
             self.stage_times[st_key] = round(self.stage_times.get(st_key, 0.0) + float(time_taken), 1)
             self.total_time = round(sum(self.stage_times.values()), 1)
-            
+
         self.save()
         self.sync_score()
         return self.score, is_first, bonus_pts
@@ -264,7 +258,7 @@ class PlayerState:
     def sync_score(self):
         if not self.is_registered():
             return
-            
+
         # Update local file
         update_local_leaderboard(
             self.name, self.class_name, self.score,
@@ -299,7 +293,7 @@ def get_leaderboard(limit=50):
                 entries = json.load(f)
         except Exception:
             entries = []
-            
+
     # Sort: Higher score first (-score), then least total time (+total_time)
     entries.sort(key=lambda x: (-x.get("score", 0), x.get("total_time", 999999), x.get("timestamp", 0)))
     return entries[:limit]
@@ -309,7 +303,7 @@ def update_local_leaderboard(name, class_name, score, total_time=0.0, stage_scor
     """Update or append player record in shared local leaderboard file."""
     if not name or not class_name:
         return
-        
+
     entries = []
     if os.path.exists(LEADERBOARD_FILE):
         try:
@@ -357,7 +351,7 @@ def reset_leaderboard(clear_first_finishers=True):
     try:
         with open(LEADERBOARD_FILE, "w", encoding="utf-8") as f:
             json.dump([], f, indent=2)
-            
+
         if clear_first_finishers:
             with open(FIRST_FINISHERS_FILE, "w", encoding="utf-8") as f:
                 json.dump({}, f, indent=2)

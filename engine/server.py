@@ -228,15 +228,17 @@ class WorkshopHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 "bonus_pts": bonus_pts
             })
             return
-
-        # 3. Student Stage Unlock (via Stage Key)
+        # 3. Student Stage Unlock (organizer-controlled)
         elif path == "/api/unlock":
-            stage_num = int(body.get("stage", 2))
-            pwd = body.get("password", "").strip()
-            
-            expected = STAGE_PASSWORDS.get(stage_num)
             st = get_workshop_status()
             unlocked = st.get("unlocked", [1])
+
+            self.send_json({
+                "success": False,
+                "message": "Only the workshop organizer can unlock stages.",
+                "unlocked": unlocked
+            }, status=403)
+            return
 
             if stage_num in unlocked:
                 self.send_json({"success": True, "message": "Stage already unlocked.", "unlocked": unlocked})
